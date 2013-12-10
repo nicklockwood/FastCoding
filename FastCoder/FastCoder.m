@@ -219,7 +219,6 @@ id FastCodingReadObject(NSUInteger *offset, const void *input, NSUInteger total,
         {
             uint32_t length = FastCodingReadUInt32(offset, input);
             NSData *data = [NSData dataWithBytes:(input + *offset) length:length];
-            [known addObject:data];
             *offset += length + (4 - ((length % 4) ?: 4));
             [known addObject:data];
             return data;
