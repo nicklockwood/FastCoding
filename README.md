@@ -7,7 +7,7 @@ The design goals of the FastCoder library are to provide fast, flexible, secure 
 
 FastCoder is already faster (on average) for reading than any of the built-in serialization mechanisms in Cocoa, and is faster for writing than any format apart from JSON. File size is comparable to the other methods. 
 
-FastCoder supports more data types than either JSON or Plist coding (including NSSet and NSOrderedSet), and the intention is to eventually support arbitrary object encoding.
+FastCoder supports more data types than either JSON or Plist coding (including NSSet and NSOrderedSet), and allows all supported ata types to be used as the keys in a dictionary, not just strings. The intention is to eventually support arbitrary object encoding.
 
 
 Supported OS & SDK Versions

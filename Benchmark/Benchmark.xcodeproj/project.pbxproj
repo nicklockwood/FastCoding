@@ -19,9 +19,9 @@
 		017E301E1855FADE004AE6E4 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 017E301C1855FADE004AE6E4 /* Main.storyboard */; };
 		017E30211855FADE004AE6E4 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 017E30201855FADE004AE6E4 /* ViewController.m */; };
 		017E30231855FADE004AE6E4 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 017E30221855FADE004AE6E4 /* Images.xcassets */; };
-		01B4DAFB18575159004AEA3E /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01B4DAFA18575159004AEA3E /* FastCoder.m */; };
-		01B4DAFC18575159004AEA3E /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01B4DAFA18575159004AEA3E /* FastCoder.m */; };
 		01B4DAFE185752C7004AEA3E /* TestData.json in Resources */ = {isa = PBXBuildFile; fileRef = 01B4DAFD185752C7004AEA3E /* TestData.json */; };
+		01FA71AD18587FB20006BD50 /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01FA71AC18587FB20006BD50 /* FastCoder.m */; };
+		01FA71AE185880300006BD50 /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01FA71AC18587FB20006BD50 /* FastCoder.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -57,9 +57,9 @@
 		017E30201855FADE004AE6E4 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		017E30221855FADE004AE6E4 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		017E30291855FADE004AE6E4 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
-		01B4DAF918575159004AEA3E /* FastCoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FastCoder.h; sourceTree = "<group>"; };
-		01B4DAFA18575159004AEA3E /* FastCoder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FastCoder.m; sourceTree = "<group>"; };
 		01B4DAFD185752C7004AEA3E /* TestData.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = TestData.json; sourceTree = SOURCE_ROOT; };
+		01FA71AB18587FB20006BD50 /* FastCoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FastCoder.h; sourceTree = "<group>"; };
+		01FA71AC18587FB20006BD50 /* FastCoder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FastCoder.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,7 +87,7 @@
 		017E2FE91855CE9D004AE6E4 = {
 			isa = PBXGroup;
 			children = (
-				01B4DAF818575159004AEA3E /* FastCoder */,
+				01FA71AA18587FB20006BD50 /* FastCoder */,
 				017E2FF71855CE9D004AE6E4 /* MacBenchmark */,
 				017E30101855FADE004AE6E4 /* iOSBenchmark */,
 				017E2FF41855CE9D004AE6E4 /* Frameworks */,
@@ -159,13 +159,14 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
-		01B4DAF818575159004AEA3E /* FastCoder */ = {
+		01FA71AA18587FB20006BD50 /* FastCoder */ = {
 			isa = PBXGroup;
 			children = (
-				01B4DAF918575159004AEA3E /* FastCoder.h */,
-				01B4DAFA18575159004AEA3E /* FastCoder.m */,
+				01FA71AB18587FB20006BD50 /* FastCoder.h */,
+				01FA71AC18587FB20006BD50 /* FastCoder.m */,
 			);
-			path = FastCoder;
+			name = FastCoder;
+			path = ../FastCoder;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -253,7 +254,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				017E2FF91855CE9D004AE6E4 /* main.m in Sources */,
-				01B4DAFB18575159004AEA3E /* FastCoder.m in Sources */,
+				01FA71AD18587FB20006BD50 /* FastCoder.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -262,8 +263,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				017E30211855FADE004AE6E4 /* ViewController.m in Sources */,
+				01FA71AE185880300006BD50 /* FastCoder.m in Sources */,
 				017E301B1855FADE004AE6E4 /* AppDelegate.m in Sources */,
-				01B4DAFC18575159004AEA3E /* FastCoder.m in Sources */,
 				017E30171855FADE004AE6E4 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -362,9 +363,39 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_CXX0X_EXTENSIONS = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = YES;
+				CLANG_WARN_OBJC_EXPLICIT_OWNERSHIP_TYPE = YES;
+				CLANG_WARN_OBJC_IMPLICIT_ATOMIC_PROPERTIES = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_MISSING_PROPERTY_SYNTHESIS = YES;
+				CLANG_WARN_OBJC_RECEIVER_WEAK = YES;
+				CLANG_WARN_OBJC_REPEATED_USE_OF_WEAK = YES;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CLANG_WARN__EXIT_TIME_DESTRUCTORS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "MacBenchmark/FastCoding-Prefix.pch";
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = YES;
+				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
+				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
+				GCC_WARN_MULTIPLE_DEFINITION_TYPES_FOR_SELECTOR = YES;
+				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
+				GCC_WARN_PEDANTIC = YES;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_SIGN_COMPARE = YES;
+				GCC_WARN_STRICT_SELECTOR_MATCH = YES;
+				GCC_WARN_UNKNOWN_PRAGMAS = YES;
+				GCC_WARN_UNUSED_LABEL = YES;
+				GCC_WARN_UNUSED_PARAMETER = YES;
 				PRODUCT_NAME = MacBenchmark;
+				WARNING_CFLAGS = "-Weverything";
 			};
 			name = Debug;
 		};
@@ -372,9 +403,39 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_CXX0X_EXTENSIONS = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = YES;
+				CLANG_WARN_OBJC_EXPLICIT_OWNERSHIP_TYPE = YES;
+				CLANG_WARN_OBJC_IMPLICIT_ATOMIC_PROPERTIES = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_MISSING_PROPERTY_SYNTHESIS = YES;
+				CLANG_WARN_OBJC_RECEIVER_WEAK = YES;
+				CLANG_WARN_OBJC_REPEATED_USE_OF_WEAK = YES;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CLANG_WARN__EXIT_TIME_DESTRUCTORS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "MacBenchmark/FastCoding-Prefix.pch";
+				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
+				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = YES;
+				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
+				GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES;
+				GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED = YES;
+				GCC_WARN_MULTIPLE_DEFINITION_TYPES_FOR_SELECTOR = YES;
+				GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES;
+				GCC_WARN_PEDANTIC = YES;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_SIGN_COMPARE = YES;
+				GCC_WARN_STRICT_SELECTOR_MATCH = YES;
+				GCC_WARN_UNKNOWN_PRAGMAS = YES;
+				GCC_WARN_UNUSED_LABEL = YES;
+				GCC_WARN_UNUSED_PARAMETER = YES;
 				PRODUCT_NAME = MacBenchmark;
+				WARNING_CFLAGS = "-Weverything";
 			};
 			name = Release;
 		};

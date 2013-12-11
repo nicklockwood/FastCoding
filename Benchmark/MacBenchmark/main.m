@@ -10,23 +10,25 @@
 #import "FastCoder.h"
 
 
+void LogLoading(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval);
 void LogLoading(NSString *name, NSTimeInterval start, NSTimeInterval loaded, NSTimeInterval parsed)
 {
     NSLog(@"%@ loading: %.0f ms, parsing: %.0f ms, total: %.0f ms", name, (loaded - start) * 1000, (parsed - loaded) * 1000, (parsed - start) * 1000);
 }
 
+void LogSaving(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval);
 void LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written, NSTimeInterval saved)
 {
     NSLog(@"%@ writing: %.0f ms, saving: %.0f ms, total: %.0f ms", name, (written - start) * 1000, (saved - written) * 1000, (saved - start) * 1000);
 }
 
-int main(int argc, const char * argv[])
+int main(__unused int argc, __unused const char * argv[])
 {
     @autoreleasepool
     {
-        NSString *testInputPath = @"/Users/nick/Dropbox/Open Source (GIT)/FastCoding/TestData.json";
+        NSString *testInputPath = @"/Users/nick/Dropbox/Open Source (GIT)/FastCoding/Benchmark/TestData.json";
         NSData *data = [NSData dataWithContentsOfFile:testInputPath];
-        id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+        id object = [NSJSONSerialization JSONObjectWithData:data options:(NSJSONReadingOptions)0 error:NULL];
         
         NSString *JSONPath = [NSTemporaryDirectory() stringByAppendingString:@"test.json"];
         NSString *PLISTPath = [NSTemporaryDirectory() stringByAppendingString:@"test.plist"];
@@ -36,7 +38,7 @@ int main(int argc, const char * argv[])
         CFTimeInterval start = CFAbsoluteTimeGetCurrent();
         
         //write json
-        data = [NSJSONSerialization dataWithJSONObject:object options:0 error:NULL];
+        data = [NSJSONSerialization dataWithJSONObject:object options:(NSJSONWritingOptions)0 error:NULL];
         CFTimeInterval jsonWritten = CFAbsoluteTimeGetCurrent();
         
         //save json
@@ -49,7 +51,7 @@ int main(int argc, const char * argv[])
         CFTimeInterval jsonLoaded = CFAbsoluteTimeGetCurrent();
         
         //parse json
-        object = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+        object = [NSJSONSerialization JSONObjectWithData:data options:(NSJSONReadingOptions)0 error:NULL];
         CFTimeInterval jsonParsed = CFAbsoluteTimeGetCurrent();
         LogLoading(@"JSON", jsonSaved, jsonLoaded, jsonParsed);
         
