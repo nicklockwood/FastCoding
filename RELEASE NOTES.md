@@ -1,3 +1,8 @@
+Version 2.0
+
+- Added ability to automatically encode any object type
+- Mutability of NSString and NSData objects is now preserved
+
 Version 1.1
 
 - Improved security by throwing an exception if unexpected EOF is encountered
