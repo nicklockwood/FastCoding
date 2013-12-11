@@ -78,6 +78,7 @@ typedef NS_ENUM(uint32_t, FCType)
     FCTypeFloat64,
     FCTypeData,
     FCTypeDate,
+    FCTypeMutableString,
 };
 
 
@@ -134,6 +135,7 @@ id FCReadString(NSUInteger *offset, const void *input, NSUInteger total, __unsaf
 id FCReadDictionary(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache) {
     uint32_t count = FCReadUInt32(offset, input, total);
     __autoreleasing NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithCapacity:count];
+    [cache addObject:dict];
     for (uint32_t i = 0; i < count; i++)
     {
         [dict setObject:FCReadObject(offset, input, total, cache) forKey:FCReadObject(offset, input, total, cache)];
@@ -144,6 +146,7 @@ id FCReadDictionary(NSUInteger *offset, const void *input, NSUInteger total, __u
 id FCReadArray(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache) {
     uint32_t count = FCReadUInt32(offset, input, total);
     __autoreleasing NSMutableArray *array = [NSMutableArray arrayWithCapacity:count];
+    [cache addObject:array];
     for (uint32_t i = 0; i < count; i++)
     {
         [array addObject:FCReadObject(offset, input, total, cache)];
@@ -154,6 +157,7 @@ id FCReadArray(NSUInteger *offset, const void *input, NSUInteger total, __unsafe
 id FCReadSet(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache) {
     uint32_t count = FCReadUInt32(offset, input, total);
     __autoreleasing NSMutableSet *set = [NSMutableSet setWithCapacity:count];
+    [cache addObject:set];
     for (uint32_t i = 0; i < count; i++)
     {
         [set addObject:FCReadObject(offset, input, total, cache)];
@@ -164,6 +168,7 @@ id FCReadSet(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_u
 id FCReadOrderedSet(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache) {
     uint32_t count = FCReadUInt32(offset, input, total);
     __autoreleasing NSMutableOrderedSet *set = [NSMutableOrderedSet orderedSetWithCapacity:count];
+    [cache addObject:set];
     for (uint32_t i = 0; i < count; i++)
     {
         [set addObject:FCReadObject(offset, input, total, cache)];
@@ -179,24 +184,32 @@ id FCReadFalse(__unused NSUInteger *offset, __unused const void *input, __unused
     return @NO;
 }
 
-id FCReadInt32(NSUInteger *offset, const void *input, NSUInteger total, __unused NSMutableArray *cache) {
+id FCReadInt32(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache) {
     FC_READ_VALUE(int32_t, *offset, input, total);
-    return @(value);
+    NSNumber *number = @(value);
+    [cache addObject:number];
+    return number;
 }
 
-id FCReadInt64(NSUInteger *offset, const void *input, NSUInteger total, __unused NSMutableArray *cache) {
+id FCReadInt64(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache) {
     FC_READ_VALUE(int64_t, *offset, input, total);
-    return @(value);
+    NSNumber *number = @(value);
+    [cache addObject:number];
+    return number;
 }
 
-id FCReadFloat32(NSUInteger *offset, const void *input, NSUInteger total, __unused NSMutableArray *cache) {
+id FCReadFloat32(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache) {
     FC_READ_VALUE(Float32, *offset, input, total);
-    return @(value);
+    NSNumber *number = @(value);
+    [cache addObject:number];
+    return number;
 }
 
-id FCReadFloat64(NSUInteger *offset, const void *input, NSUInteger total, __unused NSMutableArray *cache) {
+id FCReadFloat64(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache) {
     FC_READ_VALUE(Float64, *offset, input, total);
-    return @(value);
+    NSNumber *number = @(value);
+    [cache addObject:number];
+    return number;
 }
 
 id FCReadData(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache) {
@@ -214,6 +227,17 @@ id FCReadDate(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_
     __autoreleasing NSDate *date = [NSDate dateWithTimeIntervalSince1970:value];
     [cache addObject:date];
     return date;
+}
+
+id FCReadMutableString(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache) {
+    __autoreleasing NSString *string = nil;
+    NSUInteger length = strlen(input + *offset) + 1;
+    NSUInteger paddedLength = length + (4 - ((length % 4) ?: 4));
+    FC_ASSERT_FITS(paddedLength, *offset, total);
+    string = [[NSMutableString alloc] initWithBytes:input + *offset length:length - 1 encoding:NSUTF8StringEncoding];
+    *offset += paddedLength;
+    [cache addObject:string];
+    return FC_AUTORELEASE(string);
 }
 
 id FCReadObject(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained NSMutableArray *cache)
@@ -235,6 +259,7 @@ id FCReadObject(NSUInteger *offset, const void *input, NSUInteger total, __unsaf
         FCReadFloat64,
         FCReadData,
         FCReadDate,
+        FCReadMutableString,
     };
     
     FCType type = FCReadUInt32(offset, input, total);
@@ -254,7 +279,7 @@ static inline void FCWriteUInt32(uint32_t value, __unsafe_unretained NSMutableDa
 void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsafe_unretained NSMutableOrderedSet *cache)
 {
     //check cache
-    NSUInteger index = [cache indexOfObject:object];
+    NSUInteger index = [cache indexOfObject:@((NSUInteger)object)];
     if (index != NSNotFound)
     {
         FCWriteUInt32(FCTypeAlias, output);
@@ -329,12 +354,12 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
-    FCWriteUInt32(FCTypeString, output);
+    [cache addObject:@((NSUInteger)self)];
+    FCWriteUInt32(([self classForCoder] == [NSMutableString class])? FCTypeMutableString: FCTypeString, output);
     const char *string = [self UTF8String];
     NSUInteger length = strlen(string) + 1;
     [output appendBytes:string length:length];
     output.length += (4 - ((length % 4) ?: 4));
-    [cache addObject:self];
 }
 
 @end
@@ -342,7 +367,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSNumber (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unused NSMutableOrderedSet *)cache
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
     if (self == (void *)kCFBooleanFalse)
     {
@@ -354,6 +379,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
     }
     else
     {
+        [cache addObject:@((NSUInteger)self)];
         CFNumberType subtype = CFNumberGetType((CFNumberRef)self);
         switch (subtype)
         {
@@ -412,10 +438,10 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
+    [cache addObject:@((NSUInteger)self)];
     FCWriteUInt32(FCTypeDate, output);
     NSTimeInterval value = [self timeIntervalSinceReferenceDate];
     [output appendBytes:&value length:sizeof(value)];
-    [cache addObject:self];
 }
 
 @end
@@ -425,12 +451,12 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
+    [cache addObject:@((NSUInteger)self)];
     FCWriteUInt32(FCTypeData, output);
     uint32_t length = (uint32_t)[self length];
     FCWriteUInt32(length, output);
     [output appendData:self];
     output.length += (4 - ((length % 4) ?: 4));
-    [cache addObject:self];
 }
 
 @end
@@ -450,6 +476,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
+    [cache addObject:@((NSUInteger)self)];
     FCWriteUInt32(FCTypeDictionary, output);
     FCWriteUInt32((uint32_t)[self count], output);
     [self enumerateKeysAndObjectsUsingBlock:^(id key, id obj, __unused BOOL *stop) {
@@ -465,6 +492,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
+    [cache addObject:@((NSUInteger)self)];
     FCWriteUInt32(FCTypeArray, output);
     FCWriteUInt32((uint32_t)[self count], output);
     for (id value in self)
@@ -480,6 +508,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
+    [cache addObject:@((NSUInteger)self)];
     FCWriteUInt32(FCTypeSet, output);
     FCWriteUInt32((uint32_t)[self count], output);
     for (id value in self)
@@ -495,6 +524,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
+    [cache addObject:@((NSUInteger)self)];
     FCWriteUInt32(FCTypeOrderedSet, output);
     FCWriteUInt32((uint32_t)[self count], output);
     for (id value in self)
