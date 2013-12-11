@@ -99,7 +99,7 @@ value = *(type *)(input + (offset)); offset += sizeof(value); }
 
 @interface NSObject (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableDictionary *)cache;
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache;
 
 @end
 
@@ -251,14 +251,14 @@ static inline void FCWriteUInt32(uint32_t value, __unsafe_unretained NSMutableDa
     [output appendBytes:&value length:sizeof(value)];
 }
 
-void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsafe_unretained NSMutableDictionary *cache)
+void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsafe_unretained NSMutableOrderedSet *cache)
 {
     //check cache
-    NSNumber *alias = cache[object];
-    if (alias)
+    NSUInteger index = [cache indexOfObject:object];
+    if (index != NSNotFound)
     {
         FCWriteUInt32(FCTypeAlias, output);
-        FCWriteUInt32((uint32_t)[alias intValue], output);
+        FCWriteUInt32((uint32_t)index, output);
     }
     else
     {
@@ -296,8 +296,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
     }
     
     NSUInteger offset = sizeof(header);
-    __autoreleasing NSMutableArray *known = [NSMutableArray array];
-    return FCReadObject(&offset, input, length, known);
+    return FCReadObject(&offset, input, length, [NSMutableArray array]);
 }
 
 + (NSData *)dataWithRootObject:(id)object
@@ -307,8 +306,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
         FCHeader header = {FCIdentifier, FCMajorVersion, FCMinorVersion};
         NSMutableData *output = [NSMutableData dataWithLength:sizeof(header)];
         memcpy(output.mutableBytes, &header, sizeof(header));
-        __autoreleasing NSMutableDictionary *known = [NSMutableDictionary dictionary];
-        FCWriteObject(object, output, known);
+        FCWriteObject(object, output, [NSMutableOrderedSet orderedSet]);
         return output;
     }
     return nil;
@@ -319,7 +317,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSObject (FastCoding)
 
-- (void)FC_writeToOutput:(__unused NSMutableData *)output cache:(__unused NSMutableDictionary *)cache
+- (void)FC_writeToOutput:(__unused NSMutableData *)output cache:(__unused NSMutableOrderedSet *)cache
 {
     [NSException raise:NSInvalidArgumentException format:@"FastCoding cannot encode objects of type: %@", [self class]];
 }
@@ -329,14 +327,14 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSString (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableDictionary *)cache
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
     FCWriteUInt32(FCTypeString, output);
     const char *string = [self UTF8String];
     NSUInteger length = strlen(string) + 1;
     [output appendBytes:string length:length];
     output.length += (4 - ((length % 4) ?: 4));
-    cache[self] = @([cache count]);
+    [cache addObject:self];
 }
 
 @end
@@ -344,7 +342,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSNumber (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unused NSMutableDictionary *)cache
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unused NSMutableOrderedSet *)cache
 {
     if (self == (void *)kCFBooleanFalse)
     {
@@ -412,12 +410,12 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSDate (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableDictionary *)cache
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
     FCWriteUInt32(FCTypeDate, output);
     NSTimeInterval value = [self timeIntervalSinceReferenceDate];
     [output appendBytes:&value length:sizeof(value)];
-    cache[self] = @([cache count]);
+    [cache addObject:self];
 }
 
 @end
@@ -425,14 +423,14 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSData (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableDictionary *)cache
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
     FCWriteUInt32(FCTypeData, output);
     uint32_t length = (uint32_t)[self length];
     FCWriteUInt32(length, output);
     [output appendData:self];
     output.length += (4 - ((length % 4) ?: 4));
-    cache[self] = @([cache count]);
+    [cache addObject:self];
 }
 
 @end
@@ -440,7 +438,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSNull (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unused NSMutableDictionary *)cache
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unused NSMutableOrderedSet *)cache
 {
     FCWriteUInt32(FCTypeNull, output);
 }
@@ -450,7 +448,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSDictionary (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableDictionary *)cache
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
     FCWriteUInt32(FCTypeDictionary, output);
     FCWriteUInt32((uint32_t)[self count], output);
@@ -465,7 +463,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSArray (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableDictionary *)cache
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
     FCWriteUInt32(FCTypeArray, output);
     FCWriteUInt32((uint32_t)[self count], output);
@@ -480,7 +478,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSSet (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableDictionary *)cache
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
     FCWriteUInt32(FCTypeSet, output);
     FCWriteUInt32((uint32_t)[self count], output);
@@ -495,7 +493,7 @@ void FCWriteObject(id object, __unsafe_unretained NSMutableData *output, __unsaf
 
 @implementation NSOrderedSet (FastCoding)
 
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableDictionary *)cache
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output cache:(__unsafe_unretained NSMutableOrderedSet *)cache
 {
     FCWriteUInt32(FCTypeOrderedSet, output);
     FCWriteUInt32((uint32_t)[self count], output);
