@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 2.0.1
+//  Version 2.0.2
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -709,6 +709,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
     if (className)
     {
         //get class definition
+        __autoreleasing NSArray *propertyKeys = [self allKeys];
         __autoreleasing FCClassDefinition *objectClass = nil;
         @synchronized([self class])
         {
@@ -718,17 +719,36 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
                 classNames = [[NSMutableDictionary alloc] init];
             }
             objectClass = classNames[className];
+            if (objectClass)
+            {
+                //check that existing class definition contains all keys
+                __autoreleasing NSMutableArray *keys = nil;
+                for (__unsafe_unretained id key in propertyKeys)
+                {
+                    if (![objectClass.propertyKeys containsObject:key])
+                    {
+                        keys = keys ?: [NSMutableArray array];
+                        [keys addObject:key];
+                    }
+                }
+                if (keys)
+                {
+                    //we need to create a new class definition that includes extra keys
+                    propertyKeys = [objectClass.propertyKeys arrayByAddingObjectsFromArray:keys];
+                    objectClass = nil;
+                }
+            }
             if (!objectClass)
             {
+                //create class definition
                 objectClass = [[FCClassDefinition alloc] init];
                 objectClass.className = className;
-                objectClass.propertyKeys = [self allKeys];
+                objectClass.propertyKeys = propertyKeys;
                 classNames[className] = FC_AUTORELEASE(objectClass);
             }
         }
         
         //write class definition
-        __autoreleasing NSArray *propertyKeys = objectClass.propertyKeys;
         NSUInteger classIndex = FCIndexOfCachedObject(objectClass, cache);
         if (classIndex == NSNotFound)
         {
@@ -736,9 +756,10 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
             FCWriteUInt32(FCTypeClassDefinition, output);
             FCWriteString(objectClass.className, output);
             FCWriteUInt32((uint32_t)[propertyKeys count], output);
-            for (__unsafe_unretained id value in propertyKeys)
+            for (__unsafe_unretained id key in propertyKeys)
             {
-                FCWriteString(value, output);
+                //convert each to a string using -description, just in case
+                FCWriteString([key description], output);
             }
         }
         

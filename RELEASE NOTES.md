@@ -1,3 +1,7 @@
+Version 2.0.2
+
+- Fixed a bug in object bootrapping when a $class dictionary does not contain a value for every property of the class that it represents
+
 Version 2.0.1
 
 - Fixed bug in NSDate serialization
