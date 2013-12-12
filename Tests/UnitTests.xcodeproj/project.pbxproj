@@ -12,7 +12,7 @@
 		0177129914BF91160050C6BC /* UnitTests.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0177129814BF91160050C6BC /* UnitTests.1 */; };
 		017712AD14BF92620050C6BC /* FastCoderTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 017712AC14BF92620050C6BC /* FastCoderTests.m */; };
 		017712B114BF92D00050C6BC /* TestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 017712B014BF92D00050C6BC /* TestCase.m */; };
-		01FA71B21858A9B40006BD50 /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01FA71B11858A9B40006BD50 /* FastCoder.m */; };
+		01FA71B21858A9B40006BD50 /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01FA71B11858A9B40006BD50 /* FastCoder.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */

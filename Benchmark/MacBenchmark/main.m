@@ -106,7 +106,7 @@ int main(__unused int argc, __unused const char * argv[])
         CFTimeInterval fastArchiveLoaded = CFAbsoluteTimeGetCurrent();
         
         //parse fast archive
-        object = [FastCoder objectWithData:data];
+        [FastCoder objectWithData:data];
         CFTimeInterval fastArchiveParsed = CFAbsoluteTimeGetCurrent();
         LogLoading(@"Fast Archive", fastArchiveSaved, fastArchiveLoaded, fastArchiveParsed);
     }

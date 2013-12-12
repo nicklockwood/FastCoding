@@ -1,7 +1,10 @@
 Version 2.0
 
+- FastCoding 2.0 is not forwards or backwards compatible with version 1.0 files
 - Added ability to automatically encode any object type
 - Mutability of NSString and NSData objects is now preserved
+- Added bootstrapping mechanism for creating native objects from plist/json
+- Improved decoding performance
 
 Version 1.1
 

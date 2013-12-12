@@ -1,13 +1,13 @@
 Purpose
 --------------
 
-FastCoder is a replacement for NSPropertyList and NSJSONSerializer for Mac and iOS. It is intended to eventually replace NSKeyedArchiver/Unarchiver as well.
+FastCoder is a high-performance binary serialization format for Cocoa objects and object graphs. It is intended as a replacement for NSPropertyList, NSJSONSerializer, NSKeyedArchiver/Unarchiver and Core Data.
 
-The design goals of the FastCoder library are to provide fast, flexible, secure objective C object graph serialization.
+The design goals of the FastCoder library are to be fast, flexible and secure.
 
 FastCoder is already faster (on average) for reading than any of the built-in serialization mechanisms in Cocoa, and is faster for writing than any format apart from JSON. File size is comparable to the other methods. 
 
-FastCoder supports more data types than either JSON or Plist coding (including NSSet and NSOrderedSet), and allows all supported ata types to be used as the keys in a dictionary, not just strings. The intention is to eventually support arbitrary object encoding.
+FastCoder supports more data types than either JSON or Plist coding (including NSSet and NSOrderedSet), and allows all supported ata types to be used as the keys in a dictionary, not just strings. FastCoder can also serialize most custom object types automatically using property inspection. For cases where this doesn't work, you can easily implement your own serialization using the FastCoding Protocol.
 
 
 Supported OS & SDK Versions
@@ -23,7 +23,7 @@ NOTE: 'Supported' means that the library has been tested with this version. 'Com
 ARC Compatibility
 ------------------
 
-FastCoder is compatible with both ARC and non-ARC compile targets, however performance is significantly better when running with ARC disabled, and it is recommended that you apply the -fno-objc-arc compiler flag to the FastCoder.m class. To do this, go to the Build Phases tab in your target settings, open the Compile Sources group, double-click FastCoder.m in the list and type -fno-objc-arc into the popover.
+FastCoder is compatible with both ARC and non-ARC compile targets, however performance is better when running with ARC disabled, and it is recommended that you apply the -fno-objc-arc compiler flag to the FastCoder.m class. To do this, go to the Build Phases tab in your target settings, open the Compile Sources group, double-click FastCoder.m in the list and type -fno-objc-arc into the popover.
 
 
 Thread Safety
@@ -52,31 +52,139 @@ Constructs an object tree from an FastCoded data object and returns it.
 Archives an object graph as a block of data, which can then be saved to a file or transmitted.
 
 
-Data structure
+The FastCoding Protocol
+-----------------------------
+
+FastCoding supports encoding/decoding of arbitrary objects using the FastCoding protocol. The FastCoding protocol is an *informal* protocol, implemented as a category on NSObject. The protocol consists of the following methods:
+
+    + (NSArray *)fastCodingKeys;
+    
+This method returns a list of property names that should be encoded/decoded for an object. The default implementation automatically detects all of the non-virtual (i.e. ivar-backed) @properties (including private and read-only properties) of the object and returns them, so in most cases it is not neccesary to override this method.
+    
+    - (id)awakeAfterFastCoding;
+
+This method is called after an object has been deserialised using the FastCoding protocol, and all of its properties have been set. The deserialised object will be replaced by the one returned by this method, so you can use this method to either modify or completely replace the object. The default implementation just returns self.
+
+
+Overriding Default FastCoding Behaviour
+-------------------------------------------
+
+If you wish to exclude certain properties of your object from being encoded, you can do so in any of the following ways:
+
+* Only use an ivar, without declaring matching @property.
+* Change the name of the ivar to something that is not KVC compliant (i.e. not the same as the property, or the property name with an _ prefix). You can do this using the @synthesize method, e.g. @synthesize foo = unEncodableFoo;
+* Override the +fastCodingKeys method
+
+If you wish to encode additional data that is not represented by an @property, override the +fastCodingKeys method and add the names of your virtual properties. You will need to implement sutiable setter/getter methods for these properties, or the encoding/decoding process won't work.
+
+If you wish to substitute a different class for decoding, you can implement the -classForCoder method (part of the NSCoding protocol) and FastCoding will encode the object as that class instead. If you wish to substitute a different object after decoding, use the -awakeAfterFastCoding method.
+
+If you have removed or renamed a property of a class, and want to provide backward compatibilty for a previously saved FastCoder file, you should implement a private setter method for the old property, which you can then map to wherever it should go in the new object structure. E.g. if the old property was called foo, add a private -setFoo: method. Alternatively, override the -setValue:forUndefinedKey: method to gracefully handle any unknown property.
+
+
+Security
+--------------
+
+The FastCoding parser checks for buffer overflow errors whilst parsing, and will throw an exception if the data instructs it to try to read past the end of the data file. This should prevent most kinds of code injection attack.
+
+Whilst it is not possible to use a FastCoded file to inject code, as with NScoding, an attacker use a modified FastCoded file to cause unexpect class types to be created in your object graph, which might present a potential attack risk.
+
+For the time being, it is best not to try to load FastCoded files from an untrusted source (although it is fine to use them for saving data internally within your application). A future release of the FastCoding library will attempt to address this issue by whitelisting classes for decoding.
+
+
+Bootstrapping
+---------------------
+
+Sometimes it is useful to be able to define an object graph by hand using a human-readable format such as JSON, but it's time consuming to write the recursive logic needed to convert the JSON dictionaries to the correct custom objects, and error prone.
+
+FastCoder has a neat feature that allows you to "bootstrap" a carefully structured JSON or Plist file into a native object graph via the FastCoding format. To define an object of class Foo using JSON, you would use the following code:
+
+    {
+        "$class": "Foo",
+        "someProperty1": 1
+        "someProperty2": "Hello World!"
+    }
+    
+You could then load this as an ordinary NSDictionary using NSJSONSerialization. But when you then convert this to data using FastCoder, it will detect the $class key and save this using the custom object record format instead of as a dictionary. When the resultant FastCoded data is decoded again, this will be initialized as an object of type Foo instead of a dictionary.
+
+If you attempt to load the FastCoded file in an app that doesn't contain a class called Foo, the Foo object will just be loaded as an ordinary dictionary with a $class key, and then saved as a custom object again when the object is re-serialized. This means that it is possible to write applications and scripts that can process arbitrary FastCoded files without needing to know about or implement all of the classes used in the file (this is not possible using NSCoding, or at least would require a lot more work).
+
+
+Aliases
+---------------
+
+Another limitation of ordinary Plist or JSON files versus NSKeyedArchive or FastCoded files is that they don't support pointers or references. If you want multiple dictionary keys in a JSON file to point to the same object instance, there's no way to do that.FastCoding solves this problem using aliases.
+
+As with the $class syntax used for bootrapping custom object types, FastCoding treats a key with the name $alias as an internal file reference. The $alias value is a keypath relative to the root object in the file, used to specify an existing object instance. For example, see the following JSON:
+
+    {
+        "foo": {
+            "baz": { "text": "Hello World" },
+            "someProperty1": 1
+        },
+        "bar": {
+            "baz": { "text": "Hello World" },
+            "someProperty2": 2
+        }
+    }
+    
+Here, the objects foo and bar both contain an object baz. But I'd like foo and bar to both reference the same baz instance. I would do that as follows:
+
+    {
+        "foo": {
+            "baz": { "text": "Hello World" },
+            "someProperty1": 1
+        },
+        "bar": {
+            "baz": { "$alias": "foo.baz" }
+            "someProperty2": 2
+        }
+    }
+    
+Note that the baz inside bar contains an alias to the baz inside foo. When saved as a FastCoder file and the loaded again, these will atually be the same object. It doesn't matter whether bar.baz aliases foo.baz or vice-versa; FastCoder aliasing supports forward references, and even circuluar references (where an object contains an alias to itself). The alias syntax works like a keypath, although unlike rgualr keypaths you can using numbers to represent array indices. For example, in the following code, foo points to the second objct in the bar array ("Cruel"):
+
+    {
+        "foo": { "$alias": "bar.1" },
+        "bar": [ "Goodbye", "Cruel", "World" ]
+    }
+
+
+File structure
 ---------------------------
 
-The FastArchive format is very simple: There is a header consisting of a a 32-bit identifier, followed by two 16-bit version numbers (major and minor) and then one or more chunks.
+The FastArchive format is very simple:
 
-Each chunk consists of a 32-bit type identifier, followed by 0 or more additional bytes of data, depending on the chunk type.
+There is a header consisting of a a 32-bit identifier, followed by two 16-bit version numbers (major and minor). The header is followed by a 32-bit integer representing the total number of unique objects encoded in the file (this is not the same as the number of chunks). This value can be used to set the size of the capacity of the known object cache in advance, which provides some performance benefit. If the object count is not set (has a value of zero), the cache will be grown dynamically.
+
+Following the header and object count, there are a series of chunks. Each chunk consists of a 32-bit type identifier, followed by 0 or more additional bytes of data, depending on the chunk type.
 
 Commonly used types and values are represented by their own chunk in order to reduce file size and processing overhead. Other types such as strings or collections are encoded in the sequence of bytes that follow the chunk.
 
 Chunks are always 32-bit (4-byte) aligned. Most chunk types have sizes that are a multiple of 32 bits anyway, but strings and data objects whose length is not an exact multiple of 4 bytes are padded to the nearest 4-byte offset.
 
-The currently supported chunk types are:
+The chunk types supported by FastCoding are:
 
-    FCTypeNull              an NSNull value
-    FCTypeAlias,            an alias to an previously encoded chunk in the file
-    FCTypeString,           an NSString instance
-    FCTypeDictionary,       an NSDictionary instance
-    FCTypeArray,            an NSArray instance
-    FCTypeSet,              an NSSet instance
-    FCTypeOrderedSet,       an NSOrderedSet instance
-    FCTypeTrue,             a boolean YES value
-    FCTypeFalse,            a boolean NO value
-    FCTypeInt32,            a 32-bit integer value
-    FCTypeInt64,            a 64-bit integer value
-    FCTypeFloat32,          a 32-bit floating point value
-    FCTypeFloat64,          a 64-bit floating point value
-    FCTypeData,             an NSData instance
-    FCTypeDate              an NSDate instance
+    FCTypeNull                  an NSNull value
+    FCTypeAlias                 an alias to an previously encoded chunk in the file
+    FCTypeString                an NSString instance
+    FCTypeDictionary            an NSDictionary instance
+    FCTypeArray                 an NSArray instance
+    FCTypeSet                   an NSSet instance
+    FCTypeOrderedSet            an NSOrderedSet instance
+    FCTypeTrue                  a boolean YES value
+    FCTypeFalse                 a boolean NO value
+    FCTypeInt32                 a 32-bit integer value
+    FCTypeInt64                 a 64-bit integer value
+    FCTypeFloat32               a 32-bit floating point value
+    FCTypeFloat64               a 64-bit floating point value
+    FCTypeData                  an NSData instance
+    FCTypeDate                  an NSDate instance
+    FCTypeMutableString         an NSMutableString instance
+    FCTypeMutableDictionary     an NSMutableDictionary instance
+    FCTypeMutableArray          an NSMutableArray instance
+    FCTypeMutableSet            an NSMutableSet instance
+    FCTypeMutableOrderedSet     an NSMutableOrderedSet instance
+    FCTypeMutableData           an NSMutableData instance
+    FCTypeClassDefinition       a class definition (this is a private, internal object type used for object encoding)
+    FCTypeObject                an arbitrary object, encoded using thr FastCoding protocol
+    FCTypeNil                   a nil value (not the same as NSNull), used for nil object properties

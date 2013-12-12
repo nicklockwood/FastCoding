@@ -88,4 +88,19 @@
     NSAssert(model.array1 != model.array2, @"Aliasing failed");
 }
 
+- (void)bootstrapTests
+{
+    //create JSON with circular reference
+    NSString *json = @"{ \"foo\": { \"$alias\": \"bar.1\" }, \"bar\": [ \"Goodbye\", \"Cruel\", \"World\" ] }";
+    NSData *data = [json dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *object = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+    
+    //convert to FastCoded data
+    data = [FastCoder dataWithRootObject:object];
+    object = [FastCoder objectWithData:data];
+    
+    //check
+    NSAssert([object[@"foo"] isEqualTo:object[@"bar"][1]], @"Bootstrap failed");
+}
+
 @end

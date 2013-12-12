@@ -14,10 +14,8 @@ int main (__unused int argc, __unused const char * argv[])
 {
     @autoreleasepool 
 	{
-        
-        //test string functions
+        //test functions
         [[[FastCoderTests alloc] init] runTests];
-                
     }
     return 0;
 }
