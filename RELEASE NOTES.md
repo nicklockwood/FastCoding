@@ -1,6 +1,6 @@
-Version 2.1 beta
+Version 2.0.1
 
-- FastCoding now supports encoding/decoding any object that implements NSCoding
+- Fixed bug in NSDate serialization
 
 Version 2.0
 

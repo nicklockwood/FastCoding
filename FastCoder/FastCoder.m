@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 2.1 beta
+//  Version 2.0.1
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -50,7 +50,7 @@
 
 static const uint32_t FCIdentifier = 'FAST';
 static const uint16_t FCMajorVersion = 2;
-static const uint16_t FCMinorVersion = 1;
+static const uint16_t FCMinorVersion = 0;
 
 
 typedef struct
@@ -88,7 +88,6 @@ typedef NS_ENUM(uint32_t, FCType)
     FCTypeClassDefinition,
     FCTypeObject,
     FCTypeNil,
-    FCTypeKeyedArchive,
 };
 
 
@@ -314,17 +313,6 @@ static id FCReadNil(__unused NSUInteger *offset, __unused const void *input, __u
     return nil;
 }
 
-static id FCReadKeyedArchive(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
-    uint32_t length = FCReadUInt32(offset, input, total);
-    NSUInteger paddedLength = length + (4 - ((length % 4) ?: 4));
-    FC_ASSERT_FITS(paddedLength, *offset, total);
-    __autoreleasing NSData *data = [NSData dataWithBytes:(input + *offset) length:length];
-    *offset += paddedLength;
-    id object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-    FCCacheReadObject(object, cache);
-    return object;
-}
-
 static id FCReadObject(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache)
 {
     static id (*constructors[])(NSUInteger *, const void *, NSUInteger, id) =
@@ -353,7 +341,6 @@ static id FCReadObject(NSUInteger *offset, const void *input, NSUInteger total, 
         FCReadClassDefinition,
         FCReadObjectInstance,
         FCReadNil,
-        FCReadKeyedArchive,
     };
     
     FCType type = FCReadUInt32(offset, input, total);
@@ -477,57 +464,50 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
 
 + (NSArray *)fastCodingKeys
 {
-    __autoreleasing NSArray *codableKeys = nil;
+    __autoreleasing NSMutableArray *codableKeys = nil;
     @synchronized([self class])
     {
         codableKeys = objc_getAssociatedObject(self, _cmd);
         if (!codableKeys)
         {
-            if ([self conformsToProtocol:@protocol(NSCoding)])
+            codableKeys = [NSMutableArray array];
+            unsigned int propertyCount;
+            objc_property_t *properties = class_copyPropertyList([self class], &propertyCount);
+            for (unsigned int i = 0; i < propertyCount; i++)
             {
-                codableKeys = @[@"$archive"];
-            }
-            else
-            {
-                codableKeys = [NSMutableArray array];
-                unsigned int propertyCount;
-                objc_property_t *properties = class_copyPropertyList([self class], &propertyCount);
-                for (unsigned int i = 0; i < propertyCount; i++)
+                //get property
+                objc_property_t property = properties[i];
+                const char *propertyName = property_getName(property);
+                NSString *key = @(propertyName);
+                
+                //see if there is a backing ivar
+                char *ivar = property_copyAttributeValue(property, "V");
+                if (ivar)
                 {
-                    //get property
-                    objc_property_t property = properties[i];
-                    const char *propertyName = property_getName(property);
-                    NSString *key = @(propertyName);
-                    
-                    //see if there is a backing ivar
-                    char *ivar = property_copyAttributeValue(property, "V");
-                    if (ivar)
+                    //check if read-only
+                    char *readonly = property_copyAttributeValue(property, "R");
+                    if (readonly)
                     {
-                        //check if read-only
-                        char *readonly = property_copyAttributeValue(property, "R");
-                        if (readonly)
+                        //check if ivar has KVC-compliant name
+                        NSString *ivarName = [NSString stringWithFormat:@"%s", ivar];
+                        if ([ivarName isEqualToString:key] ||
+                            [ivarName isEqualToString:[@"_" stringByAppendingString:key]])
                         {
-                            //check if ivar has KVC-compliant name
-                            NSString *ivarName = [NSString stringWithFormat:@"%s", ivar];
-                            if ([ivarName isEqualToString:key] ||
-                                [ivarName isEqualToString:[@"_" stringByAppendingString:key]])
-                            {
-                                //no setter, but setValue:forKey: will still work
-                                [(NSMutableArray *)codableKeys addObject:key];
-                            }
-                            free(readonly);
+                            //no setter, but setValue:forKey: will still work
+                            [codableKeys addObject:key];
                         }
-                        else
-                        {
-                            //there is a setter method so setValue:forKey: will work
-                            [(NSMutableArray *)codableKeys addObject:key];
-                        }
-                        free(ivar);
+                        free(readonly);
                     }
+                    else
+                    {
+                        //there is a setter method so setValue:forKey: will work
+                        [codableKeys addObject:key];
+                    }
+                    free(ivar);
                 }
-                free(properties);
-                codableKeys = FC_AUTORELEASE([codableKeys copy]);
             }
+            free(properties);
+            codableKeys = FC_AUTORELEASE([codableKeys copy]);
             objc_setAssociatedObject([self class], _cmd, codableKeys, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         }
     }
@@ -541,23 +521,10 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output rootObject:(__unsafe_unretained id)root cache:(__unsafe_unretained id)cache
 {
-    //check for NSCoding support
-    Class objectClass = [self classForCoder];
-    __autoreleasing NSArray *propertyKeys = [objectClass fastCodingKeys];
-    if ([[propertyKeys firstObject] isEqualToString:@"$archive"])
-    {
-        FCCacheWrittenObject(self, cache);
-        FCWriteUInt32(FCTypeKeyedArchive, output);
-        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self];
-        uint32_t length = (uint32_t)[data length];
-        FCWriteUInt32(length, output);
-        [output appendData:data];
-        output.length += (4 - ((length % 4) ?: 4));
-        return;
-    }
-    
     //write class definition
+    Class objectClass = [self classForCoder];
     NSUInteger classIndex = FCIndexOfCachedObject(objectClass, cache);
+    __autoreleasing NSArray *propertyKeys = [objectClass fastCodingKeys];
     if (classIndex == NSNotFound)
     {
         classIndex = FCCacheWrittenObject(objectClass, cache);
@@ -678,7 +645,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
 {
     FCCacheWrittenObject(self, cache);
     FCWriteUInt32(FCTypeDate, output);
-    NSTimeInterval value = [self timeIntervalSinceReferenceDate];
+    NSTimeInterval value = [self timeIntervalSince1970];
     [output appendBytes:&value length:sizeof(value)];
 }
 
@@ -718,11 +685,11 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
     
     //alias keypath
     __autoreleasing NSString *aliasKeypath = self[@"$alias"];
-    if (aliasKeypath && [self count] == 1)
+    if ([self count] == 1 && aliasKeypath)
     {
-        id node = root;
+        __autoreleasing id node = root;
         NSArray *parts = [aliasKeypath componentsSeparatedByString:@"."];
-        for (NSString *key in parts)
+        for (__unsafe_unretained NSString *key in parts)
         {
             if ([node isKindOfClass:[NSArray class]])
             {

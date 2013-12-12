@@ -26,10 +26,6 @@ int main(__unused int argc, __unused const char * argv[])
 {
     @autoreleasepool
     {
-        NSURL *testURL = [NSURL URLWithString:@"http://apple.com"];
-        NSData *URLData = [FastCoder dataWithRootObject:testURL];
-        testURL = [FastCoder objectWithData:URLData];
-        
         NSString *testInputPath = @"/Users/nick/Dropbox/Open Source (GIT)/FastCoding/Benchmark/TestData.json";
         NSData *data = [NSData dataWithContentsOfFile:testInputPath];
         id object = [NSJSONSerialization JSONObjectWithData:data options:(NSJSONReadingOptions)0 error:NULL];
