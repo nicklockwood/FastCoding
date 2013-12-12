@@ -1,3 +1,7 @@
+Version 2.1 beta
+
+- FastCoding now supports encoding/decoding any object that implements NSCoding
+
 Version 2.0
 
 - FastCoding 2.0 is not forwards or backwards compatible with version 1.0 files

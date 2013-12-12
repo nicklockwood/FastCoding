@@ -1,7 +1,7 @@
 //
 //  FastCoding.h
 //
-//  Version 2.0
+//  Version 2.1 beta
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
