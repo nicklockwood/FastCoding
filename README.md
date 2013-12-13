@@ -61,7 +61,7 @@ FastCoding supports encoding/decoding of arbitrary objects using the FastCoding 
 
     + (NSArray *)fastCodingKeys;
     
-This method returns a list of property names that should be encoded/decoded for an object. The default implementation automatically detects all of the non-virtual (i.e. ivar-backed) @properties (including private and read-only properties) of the object and returns them, so in most cases it is not neccesary to override this method.
+This method returns a list of property names that should be encoded/decoded for an object. The default implementation automatically detects all of the non-virtual (i.e. ivar-backed) @properties (including private and read-only properties) of the object and returns them, so in most cases it is not necessary to override this method.
     
     - (id)awakeAfterFastCoding;
 
@@ -81,11 +81,11 @@ If you wish to exclude certain properties of your object from being encoded, you
 * Change the name of the ivar to something that is not KVC compliant (i.e. not the same as the property, or the property name with an _ prefix). You can do this using the @synthesize method, e.g. @synthesize foo = unEncodableFoo;
 * Override the +fastCodingKeys method
 
-If you wish to encode additional data that is not represented by an @property, override the +fastCodingKeys method and add the names of your virtual properties. You will need to implement sutiable setter/getter methods for these properties, or the encoding/decoding process won't work.
+If you wish to encode additional data that is not represented by an @property, override the +fastCodingKeys method and add the names of your virtual properties. You will need to implement suitable setter/getter methods for these properties, or the encoding/decoding process won't work.
 
 If you wish to substitute a different class for decoding, you can implement the -classForFastCoding method and FastCoding will encode the object as that class instead. If you wish to substitute a different object after decoding, use the -awakeAfterFastCoding method.
 
-If you have removed or renamed a property of a class, and want to provide backward compatibilty for a previously saved FastCoder file, you should implement a private setter method for the old property, which you can then map to wherever it should go in the new object structure. E.g. if the old property was called foo, add a private -setFoo: method. Alternatively, override the -setValue:forUndefinedKey: method to gracefully handle any unknown property.
+If you have removed or renamed a property of a class, and want to provide backward compatibility for a previously saved FastCoder file, you should implement a private setter method for the old property, which you can then map to wherever it should go in the new object structure. E.g. if the old property was called foo, add a private -setFoo: method. Alternatively, override the -setValue:forUndefinedKey: method to gracefully handle any unknown property.
 
 
 Security
@@ -93,7 +93,7 @@ Security
 
 The FastCoding parser checks for buffer overflow errors whilst parsing, and will throw an exception if the data instructs it to try to read past the end of the data file. This should prevent most kinds of code injection attack.
 
-Whilst it is not possible to use a FastCoded file to inject code, as with NScoding, an attacker use a modified FastCoded file to cause unexpected classes to be created in your object graph, which might present a potential attack risk (note that only classes that already exist in your code base or a built-in Framework can be created this way).
+Whilst it is not possible to use a FastCoded file to inject code, as with NSCoding, an attacker use a modified FastCoded file to cause unexpected classes to be created in your object graph, which might present a potential attack risk (note that only classes that already exist in your code base or a built-in Framework can be created this way).
 
 For the time being, it is best not to try to load FastCoded files from an untrusted source (although it is fine to use them for saving data internally within your application). A future release of the FastCoding library will attempt to address this issue by whitelisting classes for decoding.
 
@@ -121,7 +121,7 @@ Aliases
 
 Another limitation of ordinary Plist or JSON files versus NSKeyedArchive or FastCoded files is that they don't support pointers or references. If you want multiple dictionary keys in a JSON file to point to the same object instance, there's no way to do that.FastCoding solves this problem using aliases.
 
-As with the $class syntax used for bootrapping custom object types, FastCoding treats a key with the name $alias as an internal file reference. The $alias value is a keypath relative to the root object in the file, used to specify an existing object instance. For example, see the following JSON:
+As with the $class syntax used for bootstrapping custom object types, FastCoding treats a key with the name $alias as an internal file reference. The $alias value is a keypath relative to the root object in the file, used to specify an existing object instance. For example, see the following JSON:
 
     {
         "foo": {
@@ -147,7 +147,7 @@ Here, the objects foo and bar both contain an object baz. But I'd like foo and b
         }
     }
     
-Note that the baz inside bar contains an alias to the baz inside foo. When saved as a FastCoder file and the loaded again, these will atually be the same object. It doesn't matter whether bar.baz aliases foo.baz or vice-versa; FastCoder aliasing supports forward references, and even circuluar references (where an object contains an alias to itself). The alias syntax works like a keypath, although unlike rgualr keypaths you can using numbers to represent array indices. For example, in the following code, foo points to the second object in the bar array ("Cruel"):
+Note that the baz inside bar contains an alias to the baz inside foo. When saved as a FastCoder file and the loaded again, these will actually be the same object. It doesn't matter whether bar.baz aliases foo.baz or vice-versa; FastCoder aliasing supports forward references, and even circular references (where an object contains an alias to itself). The alias syntax works like a keypath, although unlike regular keypaths you can using numbers to represent array indices. For example, in the following code, foo points to the second object in the bar array ("Cruel"):
 
     {
         "foo": { "$alias": "bar.1" },
@@ -192,7 +192,7 @@ The chunk types supported by FastCoding are:
     FCTypeMutableOrderedSet     an NSMutableOrderedSet instance
     FCTypeMutableData           an NSMutableData instance
     FCTypeClassDefinition       a class definition (this is a private, internal object type used for object encoding)
-    FCTypeObject                an arbitrary object, encoded using thr FastCoding protocol
+    FCTypeObject                an arbitrary object, encoded using the FastCoding protocol
     FCTypeNil                   a nil value (not the same as NSNull), used for nil object properties
     FCTypeURL                   an NSURL value
     FCTypePoint                 an NSPoint/CGPoint value
