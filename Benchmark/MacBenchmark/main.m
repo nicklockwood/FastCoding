@@ -21,6 +21,8 @@ void LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written, NST
 {
     NSLog(@"%@ writing: %.0f ms, saving: %.0f ms, total: %.0f ms", name, (written - start) * 1000, (saved - written) * 1000, (saved - start) * 1000);
 }
+#import <QuartzCore/QuartzCore.h>
+
 
 int main(__unused int argc, __unused const char * argv[])
 {
@@ -93,6 +95,9 @@ int main(__unused int argc, __unused const char * argv[])
         LogLoading(@"Keyed Archive", keyedArchiveSaved, keyedArchiveLoaded, keyedArchiveParsed);
         
         //write fast archive
+        CATransform3D transform = {0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1};
+        object = [NSValue valueWithCATransform3D:transform];
+        
         data = [FastCoder dataWithRootObject:object];
         CFTimeInterval fastArchiveWritten = CFAbsoluteTimeGetCurrent();
         
@@ -106,7 +111,8 @@ int main(__unused int argc, __unused const char * argv[])
         CFTimeInterval fastArchiveLoaded = CFAbsoluteTimeGetCurrent();
         
         //parse fast archive
-        [FastCoder objectWithData:data];
+        object = [FastCoder objectWithData:data];
+        transform = [object CATransform3DValue];
         CFTimeInterval fastArchiveParsed = CFAbsoluteTimeGetCurrent();
         LogLoading(@"Fast Archive", fastArchiveSaved, fastArchiveLoaded, fastArchiveParsed);
     }

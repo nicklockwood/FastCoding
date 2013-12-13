@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		013B9853185B5825003B3221 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 013B9852185B5825003B3221 /* QuartzCore.framework */; };
 		017E2FF61855CE9D004AE6E4 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 017E2FF51855CE9D004AE6E4 /* Foundation.framework */; };
 		017E2FF91855CE9D004AE6E4 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 017E2FF81855CE9D004AE6E4 /* main.m */; };
 		017E2FFD1855CE9D004AE6E4 /* FastCoding.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 017E2FFC1855CE9D004AE6E4 /* FastCoding.1 */; };
@@ -38,6 +39,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		013B9852185B5825003B3221 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		017E2FF21855CE9D004AE6E4 /* MacBenchmark */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = MacBenchmark; sourceTree = BUILT_PRODUCTS_DIR; };
 		017E2FF51855CE9D004AE6E4 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		017E2FF81855CE9D004AE6E4 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -67,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				013B9853185B5825003B3221 /* QuartzCore.framework in Frameworks */,
 				017E2FF61855CE9D004AE6E4 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -107,6 +110,7 @@
 		017E2FF41855CE9D004AE6E4 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				013B9852185B5825003B3221 /* QuartzCore.framework */,
 				017E2FF51855CE9D004AE6E4 /* Foundation.framework */,
 				017E300C1855FADE004AE6E4 /* CoreGraphics.framework */,
 				017E300E1855FADE004AE6E4 /* UIKit.framework */,

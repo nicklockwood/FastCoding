@@ -65,6 +65,10 @@ This method returns a list of property names that should be encoded/decoded for 
 
 This method is called after an object has been deserialised using the FastCoding protocol, and all of its properties have been set. The deserialised object will be replaced by the one returned by this method, so you can use this method to either modify or completely replace the object. The default implementation just returns self.
 
+    - (Class)classForFastCoding;
+    
+This method is used to supply an alternative class to use for coding/decoding an object. This works the same way as the -classForCoder method of NSCoding, and by default returns the same value.
+
 
 Overriding Default FastCoding Behaviour
 -------------------------------------------
@@ -77,7 +81,7 @@ If you wish to exclude certain properties of your object from being encoded, you
 
 If you wish to encode additional data that is not represented by an @property, override the +fastCodingKeys method and add the names of your virtual properties. You will need to implement sutiable setter/getter methods for these properties, or the encoding/decoding process won't work.
 
-If you wish to substitute a different class for decoding, you can implement the -classForCoder method (part of the NSCoding protocol) and FastCoding will encode the object as that class instead. If you wish to substitute a different object after decoding, use the -awakeAfterFastCoding method.
+If you wish to substitute a different class for decoding, you can implement the -classForFastCoding method and FastCoding will encode the object as that class instead. If you wish to substitute a different object after decoding, use the -awakeAfterFastCoding method.
 
 If you have removed or renamed a property of a class, and want to provide backward compatibilty for a previously saved FastCoder file, you should implement a private setter method for the old property, which you can then map to wherever it should go in the new object structure. E.g. if the old property was called foo, add a private -setFoo: method. Alternatively, override the -setValue:forUndefinedKey: method to gracefully handle any unknown property.
 
@@ -188,3 +192,10 @@ The chunk types supported by FastCoding are:
     FCTypeClassDefinition       a class definition (this is a private, internal object type used for object encoding)
     FCTypeObject                an arbitrary object, encoded using thr FastCoding protocol
     FCTypeNil                   a nil value (not the same as NSNull), used for nil object properties
+    FCTypeURL                   an NSURL value
+    FCTypePoint                 an NSPoint/CGPoint value
+    FCTypeSize                  an NSSize/CGSize value
+    FCTypeRect                  an NSRect/CGRect value
+    FCTypeRange                 an NSRange value
+    FCTypeAffineTransform       a CGAffineTransform value
+    FCType3DTransform           a CATransform3D value

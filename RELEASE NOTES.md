@@ -1,6 +1,10 @@
-Version 2.0.2
+Version 2.1
 
+- Encoding NSURL and NSValue is now supported
+- Immutable arrays, dictionaries and sets are no longer converted to mutable variants when encoded
+- Added -classForFastCoding method (to avoid conflicts with NSCoding)
 - Fixed a bug in object bootrapping when a $class dictionary does not contain a value for every property of the class that it represents
+- FastCoding 2.1 is fully backwards compatible (can read version 2.0 files). FastCoding 2.1 files can be read by a 2.0 implementation provided that they do not include any of the new data types
 
 Version 2.0.1
 

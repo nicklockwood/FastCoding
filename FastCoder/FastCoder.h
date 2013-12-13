@@ -1,7 +1,7 @@
 //
 //  FastCoding.h
 //
-//  Version 2.0.2
+//  Version 2.1
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -34,10 +34,14 @@
 #import <Foundation/Foundation.h>
 
 
+extern NSString *const FastCodingException;
+
+
 @interface NSObject (FastCoding)
 
 + (NSArray *)fastCodingKeys;
 - (id)awakeAfterFastCoding;
+- (Class)classForFastCoding;
 
 @end
 
