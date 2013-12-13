@@ -5,9 +5,11 @@ FastCoder is a high-performance binary serialization format for Cocoa objects an
 
 The design goals of the FastCoder library are to be fast, flexible and secure.
 
-FastCoder is already faster (on average) for reading than any of the built-in serialization mechanisms in Cocoa, and is faster for writing than any format apart from JSON. File size is comparable to the other methods. 
+FastCoder is already faster (on average) for reading than any of the built-in serialization mechanisms in Cocoa, and is faster for writing than NSKeyedArchiver (though a little slower than JSON or Plist writing). File size is smaller than NSKeyedArchiver, and comparable to the other methods. 
 
-FastCoder supports more data types than either JSON or Plist coding (including NSSet and NSOrderedSet), and allows all supported ata types to be used as the keys in a dictionary, not just strings. FastCoder can also serialize most custom object types automatically using property inspection. For cases where this doesn't work, you can easily implement your own serialization using the FastCoding Protocol.
+FastCoder supports more data types than either JSON or Plist coding (including NSURL, NSValue, NSSet and NSOrderedSet), and allows all supported data types to be used as the keys in a dictionary, not just strings.
+
+FastCoder can also serialize your custom classes automatically using property inspection. For cases where this doesn't work automatically, you can easily implement your own serialization using the FastCoding Protocol.
 
 
 Supported OS & SDK Versions
@@ -91,7 +93,7 @@ Security
 
 The FastCoding parser checks for buffer overflow errors whilst parsing, and will throw an exception if the data instructs it to try to read past the end of the data file. This should prevent most kinds of code injection attack.
 
-Whilst it is not possible to use a FastCoded file to inject code, as with NScoding, an attacker use a modified FastCoded file to cause unexpect class types to be created in your object graph, which might present a potential attack risk.
+Whilst it is not possible to use a FastCoded file to inject code, as with NScoding, an attacker use a modified FastCoded file to cause unexpected classes to be created in your object graph, which might present a potential attack risk (note that only classes that already exist in your code base or a built-in Framework can be created this way).
 
 For the time being, it is best not to try to load FastCoded files from an untrusted source (although it is fine to use them for saving data internally within your application). A future release of the FastCoding library will attempt to address this issue by whitelisting classes for decoding.
 
@@ -145,7 +147,7 @@ Here, the objects foo and bar both contain an object baz. But I'd like foo and b
         }
     }
     
-Note that the baz inside bar contains an alias to the baz inside foo. When saved as a FastCoder file and the loaded again, these will atually be the same object. It doesn't matter whether bar.baz aliases foo.baz or vice-versa; FastCoder aliasing supports forward references, and even circuluar references (where an object contains an alias to itself). The alias syntax works like a keypath, although unlike rgualr keypaths you can using numbers to represent array indices. For example, in the following code, foo points to the second objct in the bar array ("Cruel"):
+Note that the baz inside bar contains an alias to the baz inside foo. When saved as a FastCoder file and the loaded again, these will atually be the same object. It doesn't matter whether bar.baz aliases foo.baz or vice-versa; FastCoder aliasing supports forward references, and even circuluar references (where an object contains an alias to itself). The alias syntax works like a keypath, although unlike rgualr keypaths you can using numbers to represent array indices. For example, in the following code, foo points to the second object in the bar array ("Cruel"):
 
     {
         "foo": { "$alias": "bar.1" },
@@ -164,7 +166,7 @@ Following the header and object count, there are a series of chunks. Each chunk 
 
 Commonly used types and values are represented by their own chunk in order to reduce file size and processing overhead. Other types such as strings or collections are encoded in the sequence of bytes that follow the chunk.
 
-Chunks are always 32-bit (4-byte) aligned. Most chunk types have sizes that are a multiple of 32 bits anyway, but strings and data objects whose length is not an exact multiple of 4 bytes are padded to the nearest 4-byte offset.
+Chunks are always 32-bit (4-byte) aligned. Most chunk types have sizes that are a multiples of 32 bits anyway, but strings and data objects whose length is not an exact multiple of 4 bytes are padded to the nearest 4-byte offset.
 
 The chunk types supported by FastCoding are:
 

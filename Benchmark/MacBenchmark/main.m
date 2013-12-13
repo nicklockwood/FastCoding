@@ -95,9 +95,6 @@ int main(__unused int argc, __unused const char * argv[])
         LogLoading(@"Keyed Archive", keyedArchiveSaved, keyedArchiveLoaded, keyedArchiveParsed);
         
         //write fast archive
-        CATransform3D transform = {0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1};
-        object = [NSValue valueWithCATransform3D:transform];
-        
         data = [FastCoder dataWithRootObject:object];
         CFTimeInterval fastArchiveWritten = CFAbsoluteTimeGetCurrent();
         
@@ -111,8 +108,7 @@ int main(__unused int argc, __unused const char * argv[])
         CFTimeInterval fastArchiveLoaded = CFAbsoluteTimeGetCurrent();
         
         //parse fast archive
-        object = [FastCoder objectWithData:data];
-        transform = [object CATransform3DValue];
+        [FastCoder objectWithData:data];
         CFTimeInterval fastArchiveParsed = CFAbsoluteTimeGetCurrent();
         LogLoading(@"Fast Archive", fastArchiveSaved, fastArchiveLoaded, fastArchiveParsed);
     }

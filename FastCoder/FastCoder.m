@@ -37,7 +37,7 @@
 #import <Availability.h>
 #if __has_feature(objc_arc)
 #pragma GCC diagnostic ignored "-Wpedantic"
-#warning FastCoding runs considerably slower under ARC. It is recommended that you disable it for this file
+#warning FastCoding runs slower under ARC. It is recommended that you disable it for this file
 #endif
 
 
@@ -195,8 +195,8 @@ static id FCReadMutableString(NSUInteger *offset, const void *input, NSUInteger 
 
 static id FCReadDictionary(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
     uint32_t count = FCReadUInt32(offset, input, total);
-    id *keys = malloc(count * sizeof(id));
-    id *objects = malloc(count * sizeof(id));
+    __unsafe_unretained id *keys = (__unsafe_unretained id *)malloc(count * sizeof(id));
+    __unsafe_unretained id *objects = (__unsafe_unretained id *)malloc(count * sizeof(id));
     for (uint32_t i = 0; i < count; i++)
     {
         objects[i] = FCReadObject(offset, input, total, cache);
@@ -224,7 +224,7 @@ static id FCReadMutableDictionary(NSUInteger *offset, const void *input, NSUInte
 
 static id FCReadArray(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
     uint32_t count = FCReadUInt32(offset, input, total);
-    id *objects = malloc(count * sizeof(id));
+    __unsafe_unretained id *objects = (__unsafe_unretained id *)malloc(count * sizeof(id));
     for (uint32_t i = 0; i < count; i++)
     {
         objects[i] = FCReadObject(offset, input, total, cache);
@@ -248,7 +248,7 @@ static id FCReadMutableArray(NSUInteger *offset, const void *input, NSUInteger t
 
 static id FCReadSet(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
     uint32_t count = FCReadUInt32(offset, input, total);
-    id *objects = malloc(count * sizeof(id));
+    __unsafe_unretained id *objects = (__unsafe_unretained id *)malloc(count * sizeof(id));
     for (uint32_t i = 0; i < count; i++)
     {
         objects[i] = FCReadObject(offset, input, total, cache);
@@ -272,7 +272,7 @@ static id FCReadMutableSet(NSUInteger *offset, const void *input, NSUInteger tot
 
 static id FCReadOrderedSet(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
     uint32_t count = FCReadUInt32(offset, input, total);
-    id *objects = malloc(count * sizeof(id));
+    __unsafe_unretained id *objects = (__unsafe_unretained id *)malloc(count * sizeof(id));
     for (uint32_t i = 0; i < count; i++)
     {
         objects[i] = FCReadObject(offset, input, total, cache);
@@ -362,7 +362,7 @@ static id FCReadClassDefinition(NSUInteger *offset, const void *input, NSUIntege
     FCCacheReadObject(definition, cache);
     definition.className = FCReadString(offset, input, total, nil);
     uint32_t count = FCReadUInt32(offset, input, total);
-    id *objects = malloc(count * sizeof(id));
+    __unsafe_unretained id *objects = (__unsafe_unretained id *)malloc(count * sizeof(id));
     for (uint32_t i = 0; i < count; i++)
     {
         objects[i] = FCReadString(offset, input, total, nil);
