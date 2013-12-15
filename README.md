@@ -65,7 +65,7 @@ This method returns a list of property names that should be encoded/decoded for 
     
     - (id)awakeAfterFastCoding;
 
-This method is called after an object has been deserialised using the FastCoding protocol, and all of its properties have been set. The deserialised object will be replaced by the one returned by this method, so you can use this method to either modify or completely replace the object. The default implementation just returns self.
+This method is called after an object has been deserialised using the FastCoding protocol, and all of its properties have been set. The deserialised object will be replaced by the one returned by this method, so you can use this method to either modify or completely replace the object. The default implementation just returns self. **NOTE**: returning a different object from -awakeAfterFastCoding may lead to unexpected behaviour if the object being decoded (or any of its children) contains a reference to itself.
 
     - (Class)classForFastCoding;
     

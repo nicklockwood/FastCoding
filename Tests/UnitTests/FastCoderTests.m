@@ -9,7 +9,7 @@
 #import "FastCoder.h"
 
 
-@interface Model : NSObject
+@interface Model : NSObject <NSCopying>
 
 @property (nonatomic, strong) NSString *text2;
 @property (nonatomic, strong) NSString *textNew;
@@ -32,6 +32,21 @@
         ((!self.array2 && !object.array2) || [self.array2 isEqual:object.array2]);
     }
     return NO;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    Model *copy = [[Model allocWithZone:zone] init];
+    copy.text2 = _text2;
+    copy.textNew = _textNew;
+    copy.array1 = _array1;
+    copy.array2 = _array2;
+    return copy;
+}
+
+- (id)awakeAfterFastCoding
+{
+    return [self copy];
 }
 
 @end
@@ -86,6 +101,21 @@
     //check properties
     NSAssert([model.array1 isEqualToArray:model.array2], @"Aliasing failed");
     NSAssert(model.array1 != model.array2, @"Aliasing failed");
+}
+
+- (void)testAliasingWithSubstitution
+{
+    Model *model = [[Model alloc] init];
+    NSArray *array = @[model, model];
+    
+    //seralialize
+    NSData *data = [FastCoder dataWithRootObject:array];
+    
+    //deserialize
+    array = [FastCoder objectWithData:data];
+    
+    //check properties
+    NSAssert(array[0] == array[1], @"Aliasing failed");
 }
 
 - (void)bootstrapTests

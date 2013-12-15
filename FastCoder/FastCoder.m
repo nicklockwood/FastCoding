@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 2.1
+//  Version 2.1.1
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -139,9 +139,16 @@ value = *(type *)(input + (offset)); offset += sizeof(value); }
 @end
 
 
-static inline void FCCacheReadObject(__unsafe_unretained id object, __unsafe_unretained id cache)
+static inline NSUInteger FCCacheReadObject(__unsafe_unretained id object, __unsafe_unretained id cache)
 {
+    NSUInteger offset = [cache length];
     [cache appendBytes:&object length:sizeof(id)];
+    return offset;
+}
+
+static inline void FCReplaceCachedObject(NSUInteger index, __unsafe_unretained id object, __unsafe_unretained id cache)
+{
+    [cache replaceBytesInRange:NSMakeRange(index, sizeof(id)) withBytes:&object length:sizeof(id)];
 }
 
 static inline id FCCachedObjectAtIndex(NSUInteger index, __unsafe_unretained id cache)
@@ -353,7 +360,7 @@ static id FCReadMutableData(NSUInteger *offset, const void *input, NSUInteger to
 static id FCReadDate(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
     FC_READ_VALUE(NSTimeInterval, *offset, input, total);
     __autoreleasing NSDate *date = [NSDate dateWithTimeIntervalSince1970:value];
-   FCCacheReadObject(date, cache);
+    FCCacheReadObject(date, cache);
     return date;
 }
 
@@ -379,12 +386,19 @@ static id FCReadObjectInstance(NSUInteger *offset, const void *input, NSUInteger
     __autoreleasing FCClassDefinition *definition = FCCachedObjectAtIndex(FCReadUInt32(offset, input, total), cache);
     __autoreleasing Class objectClass = NSClassFromString(definition.className);
     __autoreleasing id object = objectClass? FC_AUTORELEASE([[objectClass alloc] init]): [NSMutableDictionary dictionaryWithObject:definition.className forKey:@"$class"];
-    FCCacheReadObject(object, cache);
+    NSUInteger cacheIndex = FCCacheReadObject(object, cache);
     for (__unsafe_unretained NSString *key in definition.propertyKeys)
     {
         [object setValue:FCReadObject(offset, input, total, cache) forKey:key];
     }
-    return [object awakeAfterFastCoding];
+    id newObject = [object awakeAfterFastCoding];
+    if (newObject != object)
+    {
+        //TODO: this is only a partial solution, as any objects that referenced
+        //this object between when it was created and now will have received incorrect instance
+        FCReplaceCachedObject(cacheIndex, newObject, cache);
+    }
+    return newObject;
 }
 
 static id FCReadNil(__unused NSUInteger *offset, __unused const void *input, __unused NSUInteger total, __unused id cache) {

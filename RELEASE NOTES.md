@@ -1,3 +1,5 @@
+Version 2.1.1
+
 Version 2.1
 
 - Encoding NSURL and NSValue is now supported
