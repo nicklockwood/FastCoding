@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 2.1.1
+//  Version 2.1.2
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -141,19 +141,51 @@ value = *(type *)(input + (offset)); offset += sizeof(value); }
 
 static inline NSUInteger FCCacheReadObject(__unsafe_unretained id object, __unsafe_unretained id cache)
 {
+    
+#ifdef DEBUG
+    
+    NSUInteger offset = [cache count];
+    [cache addObject:object];
+    return offset;
+    
+#else
+    
     NSUInteger offset = [cache length];
     [cache appendBytes:&object length:sizeof(id)];
     return offset;
+    
+#endif
+    
 }
 
 static inline void FCReplaceCachedObject(NSUInteger index, __unsafe_unretained id object, __unsafe_unretained id cache)
 {
+    
+#ifdef DEBUG
+    
+    [cache replaceObjectAtIndex:index withObject:object];
+    
+#else
+    
     [cache replaceBytesInRange:NSMakeRange(index, sizeof(id)) withBytes:&object length:sizeof(id)];
+    
+#endif
+    
 }
 
 static inline id FCCachedObjectAtIndex(NSUInteger index, __unsafe_unretained id cache)
 {
+    
+#ifdef DEBUG
+    
+    return cache[index];
+    
+#else
+    
     return ((__unsafe_unretained id *)[cache bytes])[index];
+    
+#endif
+    
 }
 
 static inline uint32_t FCReadUInt32(NSUInteger *offset, const void *input, NSUInteger total)
@@ -598,11 +630,21 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
         NSLog(@"This version of the FastCoding library doesn't support FastCoding version %i files", header.majorVersion);
         return nil;
     }
-
+    
     //read data
     NSUInteger offset = sizeof(header);
     uint32_t objectCount = FCReadUInt32(&offset, input, length);
+    
+#ifdef DEBUG
+    
+    NSMutableArray *cache = [NSMutableArray arrayWithCapacity:objectCount * sizeof(id)];
+
+#else
+    
     NSMutableData *cache = [NSMutableData dataWithCapacity:objectCount * sizeof(id)];
+    
+#endif
+    
     return FCReadObject(&offset, input, length, cache);
 }
 
@@ -886,7 +928,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
     if (className)
     {
         //get class definition
-        __autoreleasing NSArray *propertyKeys = [self allKeys];
+        __autoreleasing NSArray *propertyKeys = [[self allKeys] filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"self != '$class'"]];
         __autoreleasing FCClassDefinition *objectClass = nil;
         @synchronized([self class])
         {
@@ -908,10 +950,11 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
                         [keys addObject:key];
                     }
                 }
+                propertyKeys = objectClass.propertyKeys;
                 if (keys)
                 {
                     //we need to create a new class definition that includes extra keys
-                    propertyKeys = [objectClass.propertyKeys arrayByAddingObjectsFromArray:keys];
+                    propertyKeys = [propertyKeys arrayByAddingObjectsFromArray:keys];
                     objectClass = nil;
                 }
             }

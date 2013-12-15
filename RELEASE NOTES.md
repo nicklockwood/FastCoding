@@ -1,4 +1,11 @@
+Version 2.1.2
+
+- Fixed crash when loading bootstrapped objects
+- Added benchmark for coding custom objects
+
 Version 2.1.1
+
+- Fixed a bug where multiple aliases to an object that returns a different instance from -awakeAfterFastCoding would not work correctly. This fix improves the common case, but there are still some caveats (see the documentation for the -awakeAfterFastCoding method for details).
 
 Version 2.1
 
