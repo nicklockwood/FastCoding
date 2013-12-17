@@ -684,56 +684,52 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
 
 + (NSArray *)fastCodingKeys
 {
-    @synchronized(self)
+    __autoreleasing NSMutableArray *codableKeys = [NSMutableArray array];
+    unsigned int propertyCount;
+    objc_property_t *properties = class_copyPropertyList(self, &propertyCount);
+    for (unsigned int i = 0; i < propertyCount; i++)
     {
-        __autoreleasing NSMutableArray *codableKeys = [NSMutableArray array];
-        unsigned int propertyCount;
-        objc_property_t *properties = class_copyPropertyList(self, &propertyCount);
-        for (unsigned int i = 0; i < propertyCount; i++)
+        //get property
+        objc_property_t property = properties[i];
+        const char *propertyName = property_getName(property);
+        NSString *key = @(propertyName);
+        
+        //see if there is a backing ivar
+        char *ivar = property_copyAttributeValue(property, "V");
+        if (ivar)
         {
-            //get property
-            objc_property_t property = properties[i];
-            const char *propertyName = property_getName(property);
-            NSString *key = @(propertyName);
-            
-            //see if there is a backing ivar
-            char *ivar = property_copyAttributeValue(property, "V");
-            if (ivar)
+            //check if ivar has KVC-compliant name
+            NSString *ivarName = @(ivar);
+            if ([ivarName isEqualToString:key] || [ivarName isEqualToString:[@"_" stringByAppendingString:key]])
             {
-                //check if ivar has KVC-compliant name
-                NSString *ivarName = @(ivar);
-                if ([ivarName isEqualToString:key] || [ivarName isEqualToString:[@"_" stringByAppendingString:key]])
-                {
-                    //setValue:forKey: will work
-                    [codableKeys addObject:key];
-                }
+                //setValue:forKey: will work
+                [codableKeys addObject:key];
             }
         }
-        free(properties);
-        return [NSArray arrayWithArray:codableKeys];
     }
+    free(properties);
+    return codableKeys;
 }
 
 + (NSArray *)FC_aggregatePropertyKeys
 {
-    @synchronized([NSObject class])
+    __autoreleasing NSArray *codableKeys = nil;
+    codableKeys = objc_getAssociatedObject(self, _cmd);
+    if (codableKeys == nil)
     {
-        __autoreleasing NSArray *codableKeys = nil;
-        codableKeys = objc_getAssociatedObject(self, _cmd);
-        if (codableKeys == nil)
+        codableKeys = [NSMutableArray array];
+        Class subclass = [self class];
+        while (subclass != [NSObject class])
         {
-            codableKeys = [NSMutableArray array];
-            Class subclass = [self class];
-            while (subclass != [NSObject class])
-            {
-                [(NSMutableArray *)codableKeys addObjectsFromArray:[subclass fastCodingKeys]];
-                subclass = [subclass superclass];
-            }
-            codableKeys = [NSArray arrayWithArray:codableKeys];
-            objc_setAssociatedObject(self, _cmd, codableKeys, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            [(NSMutableArray *)codableKeys addObjectsFromArray:[subclass fastCodingKeys]];
+            subclass = [subclass superclass];
         }
-        return codableKeys;
+        codableKeys = [NSArray arrayWithArray:codableKeys];
+        
+        //make the association atomically so that we don't need to bother with an @synchronize
+        objc_setAssociatedObject(self, _cmd, codableKeys, OBJC_ASSOCIATION_RETAIN);
     }
+    return codableKeys;
 }
 
 - (id)awakeAfterFastCoding

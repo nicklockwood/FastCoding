@@ -77,8 +77,8 @@ Overriding Default FastCoding Behaviour
 
 If you wish to exclude certain properties of your object from being encoded, you can do so in any of the following ways:
 
-* Only use an ivar, without declaring matching @property.
-* Change the name of the ivar to something that is not KVC compliant (i.e. not the same as the property, or the property name with an _ prefix). You can do this using the @synthesize method, e.g. @synthesize foo = unEncodableFoo;
+* Only use an ivar, without declaring a matching @property.
+* Change the name of the ivar to something that is not KVC compliant (i.e. not the same as the property, or the property name with an _ prefix). You can do this using the @synthesize method, e.g. @synthesize foo = unencodableFoo;
 * Override the +fastCodingKeys method
 
 If you wish to encode additional data that is not represented by an @property, override the +fastCodingKeys method and add the names of your virtual properties. You will need to implement suitable setter/getter methods for these properties, or the encoding/decoding process won't work.
