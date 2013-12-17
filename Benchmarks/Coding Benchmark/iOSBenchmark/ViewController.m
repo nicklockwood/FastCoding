@@ -33,7 +33,7 @@ NSString *LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written
 {
     NSString *testInputPath = [[NSBundle mainBundle] pathForResource:@"TestData" ofType:@"json"];
     NSData *data = [NSData dataWithContentsOfFile:testInputPath];
-    id object = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+    id object = [NSJSONSerialization JSONObjectWithData:data options:(NSJSONReadingOptions)0 error:NULL];
 
     NSString *KeyedArchivePath = [NSTemporaryDirectory() stringByAppendingString:@"test.nscoded"];
     NSString *FastArchivePath = [NSTemporaryDirectory() stringByAppendingString:@"test.fast"];
@@ -73,7 +73,7 @@ NSString *LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written
     CFTimeInterval fastArchiveLoaded = CFAbsoluteTimeGetCurrent();
     
     //parse fast archive
-    object = [FastCoder objectWithData:data];
+    [FastCoder objectWithData:data];
     CFTimeInterval fastArchiveParsed = CFAbsoluteTimeGetCurrent();
     
     self.label.text = [@[LogSaving(@"Keyed Archive", start, keyedArchiveWritten, keyedArchiveSaved),
