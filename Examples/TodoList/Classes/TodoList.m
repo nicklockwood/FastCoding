@@ -49,7 +49,7 @@
     return self;
 }
 
-- (void)save;
+- (void)save
 {
 	NSString *path = [[[self class] documentsDirectory] stringByAppendingPathComponent:@"TodoList.fast"];
     NSData *data = [FastCoder dataWithRootObject:self];

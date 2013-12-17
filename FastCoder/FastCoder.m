@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 2.1.2
+//  Version 2.1.3
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -144,13 +144,13 @@ static inline NSUInteger FCCacheReadObject(__unsafe_unretained id object, __unsa
     
 #ifdef DEBUG
     
-    NSUInteger offset = [cache count];
+    NSUInteger offset = [(NSArray *)cache count];
     [cache addObject:object];
     return offset;
     
 #else
     
-    NSUInteger offset = [cache length];
+    NSUInteger offset = [(NSData *)cache length];
     [cache appendBytes:&object length:sizeof(id)];
     return offset;
     
@@ -444,14 +444,14 @@ static id FCReadURL(NSUInteger *offset, const void *input, NSUInteger total, __u
 }
 
 static id FCReadPoint(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
-    CGPoint point = {FCReadDouble(offset, input, total), FCReadDouble(offset, input, total)};
+    CGPoint point = {(CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total)};
     NSValue *value = [NSValue valueWithBytes:&point objCType:@encode(CGPoint)];
     FCCacheReadObject(value, cache);
     return value;
 }
 
 static id FCReadSize(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
-    CGSize size = {FCReadDouble(offset, input, total), FCReadDouble(offset, input, total)};
+    CGSize size = {(CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total)};
     NSValue *value = [NSValue valueWithBytes:&size objCType:@encode(CGSize)];
     FCCacheReadObject(value, cache);
     return value;
@@ -460,8 +460,8 @@ static id FCReadSize(NSUInteger *offset, const void *input, NSUInteger total, __
 static id FCReadRect(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
     CGRect rect =
     {
-        {FCReadDouble(offset, input, total), FCReadDouble(offset, input, total)},
-        {FCReadDouble(offset, input, total), FCReadDouble(offset, input, total)}
+        {(CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total)},
+        {(CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total)}
     };
     NSValue *value = [NSValue valueWithBytes:&rect objCType:@encode(CGRect)];
     FCCacheReadObject(value, cache);
@@ -478,9 +478,9 @@ static id FCReadRange(NSUInteger *offset, const void *input, NSUInteger total, _
 static id FCReadAffineTransform(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
     CGAffineTransform transform =
     {
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total),
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total),
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total)
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total),
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total),
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total)
     };
     NSValue *value = [NSValue valueWithBytes:&transform objCType:@encode(CGAffineTransform)];
     FCCacheReadObject(value, cache);
@@ -490,14 +490,14 @@ static id FCReadAffineTransform(NSUInteger *offset, const void *input, NSUIntege
 static id FCRead3DTransform(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache) {
     CGFloat transform[] =
     {
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total),
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total),
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total),
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total),
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total),
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total),
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total),
-        FCReadDouble(offset, input, total), FCReadDouble(offset, input, total),
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total),
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total),
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total),
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total),
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total),
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total),
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total),
+        (CGFloat)FCReadDouble(offset, input, total), (CGFloat)FCReadDouble(offset, input, total),
     };
     NSValue *value = [NSValue valueWithBytes:&transform objCType:@encode(CGFloat[16])];
     FCCacheReadObject(value, cache);
@@ -552,7 +552,7 @@ static id FCReadObject(NSUInteger *offset, const void *input, NSUInteger total, 
 
 static inline NSUInteger FCCacheWrittenObject(__unsafe_unretained id object, __unsafe_unretained id cache)
 {
-    NSUInteger count = [cache count];
+    NSUInteger count = [(NSDictionary *)cache count];
     cache[@((NSUInteger)object)] = @(count);
     return count;
 }
@@ -627,7 +627,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
     if (header.majorVersion != FCMajorVersion)
     {
         //not compatible
-        NSLog(@"This version of the FastCoding library doesn't support FastCoding version %i files", header.majorVersion);
+        NSLog(@"This version of the FastCoding library doesn't support FastCoding version %i.%i files", header.majorVersion, header.minorVersion);
         return nil;
     }
     
@@ -684,54 +684,56 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
 
 + (NSArray *)fastCodingKeys
 {
-    __autoreleasing NSMutableArray *codableKeys = nil;
-    @synchronized([self class])
+    @synchronized(self)
     {
-        codableKeys = objc_getAssociatedObject(self, _cmd);
-        if (!codableKeys)
+        __autoreleasing NSMutableArray *codableKeys = [NSMutableArray array];
+        unsigned int propertyCount;
+        objc_property_t *properties = class_copyPropertyList(self, &propertyCount);
+        for (unsigned int i = 0; i < propertyCount; i++)
         {
-            codableKeys = [NSMutableArray array];
-            unsigned int propertyCount;
-            objc_property_t *properties = class_copyPropertyList([self class], &propertyCount);
-            for (unsigned int i = 0; i < propertyCount; i++)
+            //get property
+            objc_property_t property = properties[i];
+            const char *propertyName = property_getName(property);
+            NSString *key = @(propertyName);
+            
+            //see if there is a backing ivar
+            char *ivar = property_copyAttributeValue(property, "V");
+            if (ivar)
             {
-                //get property
-                objc_property_t property = properties[i];
-                const char *propertyName = property_getName(property);
-                NSString *key = @(propertyName);
-                
-                //see if there is a backing ivar
-                char *ivar = property_copyAttributeValue(property, "V");
-                if (ivar)
+                //check if ivar has KVC-compliant name
+                NSString *ivarName = @(ivar);
+                if ([ivarName isEqualToString:key] || [ivarName isEqualToString:[@"_" stringByAppendingString:key]])
                 {
-                    //check if read-only
-                    char *readonly = property_copyAttributeValue(property, "R");
-                    if (readonly)
-                    {
-                        //check if ivar has KVC-compliant name
-                        NSString *ivarName = [NSString stringWithFormat:@"%s", ivar];
-                        if ([ivarName isEqualToString:key] ||
-                            [ivarName isEqualToString:[@"_" stringByAppendingString:key]])
-                        {
-                            //no setter, but setValue:forKey: will still work
-                            [codableKeys addObject:key];
-                        }
-                        free(readonly);
-                    }
-                    else
-                    {
-                        //there is a setter method so setValue:forKey: will work
-                        [codableKeys addObject:key];
-                    }
-                    free(ivar);
+                    //setValue:forKey: will work
+                    [codableKeys addObject:key];
                 }
             }
-            free(properties);
-            codableKeys = FC_AUTORELEASE([codableKeys copy]);
-            objc_setAssociatedObject([self class], _cmd, codableKeys, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         }
+        free(properties);
+        return [NSArray arrayWithArray:codableKeys];
     }
-    return codableKeys;
+}
+
++ (NSArray *)FC_aggregatePropertyKeys
+{
+    @synchronized([NSObject class])
+    {
+        __autoreleasing NSArray *codableKeys = nil;
+        codableKeys = objc_getAssociatedObject(self, _cmd);
+        if (codableKeys == nil)
+        {
+            codableKeys = [NSMutableArray array];
+            Class subclass = [self class];
+            while (subclass != [NSObject class])
+            {
+                [(NSMutableArray *)codableKeys addObjectsFromArray:[subclass fastCodingKeys]];
+                subclass = [subclass superclass];
+            }
+            codableKeys = [NSArray arrayWithArray:codableKeys];
+            objc_setAssociatedObject(self, _cmd, codableKeys, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        }
+        return codableKeys;
+    }
 }
 
 - (id)awakeAfterFastCoding
@@ -751,7 +753,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
     //write class definition
     Class objectClass = [self classForFastCoding];
     NSUInteger classIndex = FCIndexOfCachedObject(objectClass, cache);
-    __autoreleasing NSArray *propertyKeys = [objectClass fastCodingKeys];
+    __autoreleasing NSArray *propertyKeys = [objectClass FC_aggregatePropertyKeys];
     if (classIndex == NSNotFound)
     {
         classIndex = FCCacheWrittenObject(objectClass, cache);

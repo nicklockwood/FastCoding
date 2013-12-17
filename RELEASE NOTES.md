@@ -1,3 +1,9 @@
+Version 2.1.3
+
+- Fixed issue where properties from inherited classes would not be coded
+- fastCodingKeys no longer includes properties with nonstandard ivar names (this brings the behaviour in line with the documentation)
+- Fixed some compiler warnings
+
 Version 2.1.2
 
 - Fixed crash when loading bootstrapped objects

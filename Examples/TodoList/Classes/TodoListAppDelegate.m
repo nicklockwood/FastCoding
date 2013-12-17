@@ -11,11 +11,11 @@
 
 @implementation TodoListAppDelegate
 
-- (void)applicationDidFinishLaunching:(UIApplication *)application
+- (void)applicationDidFinishLaunching:(__unused UIApplication *)application
 {    
     // Override point for customization after app launch    
-    [_window addSubview:_viewController.view];
-    [_window makeKeyAndVisible];
+    [self.window addSubview:self.viewController.view];
+    [self.window makeKeyAndVisible];
 }
 
 @end

@@ -61,7 +61,7 @@ FastCoding supports encoding/decoding of arbitrary objects using the FastCoding 
 
     + (NSArray *)fastCodingKeys;
     
-This method returns a list of property names that should be encoded/decoded for an object. The default implementation automatically detects all of the non-virtual (i.e. ivar-backed) @properties (including private and read-only properties) of the object and returns them, so in most cases it is not necessary to override this method.
+This method returns a list of property names that should be encoded/decoded for an object. The default implementation automatically detects all of the non-virtual (i.e. ivar-backed) @properties (including private and read-only properties) of the object and returns them, so in most cases it is not necessary to override this method. **NOTE:** if you override fastCodingKeys, you should only include keys for the current class, not properties that are inherited from the superclass(es).
     
     - (id)awakeAfterFastCoding;
 

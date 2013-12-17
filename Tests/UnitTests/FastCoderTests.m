@@ -118,7 +118,7 @@
     NSAssert(array[0] == array[1], @"Aliasing failed");
 }
 
-- (void)bootstrapTests
+- (void)testBootstrapping
 {
     //create JSON with circular reference
     NSString *json = @"{ \"foo\": { \"$alias\": \"bar.1\" }, \"bar\": [ \"Goodbye\", \"Cruel\", \"World\" ] }";

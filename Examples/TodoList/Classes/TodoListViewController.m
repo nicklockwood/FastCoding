@@ -37,20 +37,20 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {	
-	TodoItem *item = ([TodoList sharedList].items)[indexPath.row];
+	TodoItem *item = [TodoList sharedList].items[(NSUInteger)indexPath.row];
 	item.checked = !item.checked;
 	[tableView reloadRowsAtIndexPaths:@[indexPath]withRowAnimation:UITableViewRowAnimationNone];
     [[TodoList sharedList] save];
 }
 
-- (UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath
+- (UITableViewCellEditingStyle)tableView:(__unused UITableView *)tableView editingStyleForRowAtIndexPath:(__unused NSIndexPath *)indexPath
 {	
 	return UITableViewCellEditingStyleDelete;
 }
 
-- (void)tableView:(UITableView *)_tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+- (void)tableView:(__unused UITableView *)_tableView commitEditingStyle:(__unused UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
 {	
-	[[TodoList sharedList].items removeObjectAtIndex:indexPath.row];
+	[[TodoList sharedList].items removeObjectAtIndex:(NSUInteger)indexPath.row];
 	[[TodoList sharedList] save];
 	[self.tableView reloadData];
 }
@@ -58,9 +58,9 @@
 #pragma mark -
 #pragma mark UITableViewDataSource methods
 
-- (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section
+- (NSInteger)tableView:(__unused UITableView *)table numberOfRowsInSection:(__unused NSInteger)section
 {	
-	return [[TodoList sharedList].items count];
+	return (NSInteger)[[TodoList sharedList].items count];
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -69,20 +69,13 @@
 	UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellType];
 	if (cell == nil)
     {
-		cell = [[UITableViewCell alloc] initWithStyle:UITableViewStylePlain reuseIdentifier:cellType];
+		cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellType];
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
 	}
 	
-	TodoItem *item = ([TodoList sharedList].items)[indexPath.row];
+	TodoItem *item = [TodoList sharedList].items[(NSUInteger)indexPath.row];
 	cell.textLabel.text = item.label;
-	if (item.checked)
-    {
-		cell.accessoryType = UITableViewCellAccessoryCheckmark;
-	}
-    else
-    {
-		cell.accessoryType = UITableViewCellAccessoryNone;
-	}
+	cell.accessoryType = item.checked? UITableViewCellAccessoryCheckmark: UITableViewCellAccessoryNone;
 	
 	return cell;
 }
