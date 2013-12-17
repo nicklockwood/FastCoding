@@ -1,3 +1,7 @@
+Version 2.1.4
+
+- Fixed bug when encoding NSURLs.
+
 Version 2.1.3
 
 - Fixed issue where properties from inherited classes would not be coded

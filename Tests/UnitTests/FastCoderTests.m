@@ -133,4 +133,18 @@
     NSAssert([object[@"foo"] isEqualTo:object[@"bar"][1]], @"Bootstrap failed");
 }
 
+- (void)testURLEncoding
+{
+    //create URL with circular reference
+    NSURL *URL = [NSURL URLWithString:@"foobar" relativeToURL:[NSURL URLWithString:@"http://example.com"]];
+    id input = @{@"a": URL, @"b": URL, @"c": URL, @"d": URL};
+    
+    //convert to FastCoded data
+    NSData *data = [FastCoder dataWithRootObject:input];
+    id output = [FastCoder objectWithData:data];
+    
+    //check
+    NSAssert([input isEqualTo:output], @"URLEncoding failed");
+}
+
 @end

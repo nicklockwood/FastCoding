@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 2.1.3
+//  Version 2.1.4
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -1069,10 +1069,10 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output rootObject:(__unsafe_unretained id)root cache:(__unsafe_unretained id)cache
 {
-    FCCacheWrittenObject(self, cache);
     FCWriteUInt32(FCTypeURL, output);
     FCWriteObject(self.relativeString, root, output, cache);
     FCWriteObject(self.baseURL, root, output, cache);
+    FCCacheWrittenObject(self, cache);
 }
 
 @end
