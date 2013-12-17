@@ -928,7 +928,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained id 
         //get class definition
         __autoreleasing NSArray *propertyKeys = [[self allKeys] filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"self != '$class'"]];
         __autoreleasing FCClassDefinition *objectClass = nil;
-        @synchronized([self class])
+        @synchronized([NSDictionary class])
         {
             static NSMutableDictionary *classNames = nil;
             if (!classNames)
