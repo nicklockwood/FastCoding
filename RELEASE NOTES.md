@@ -1,3 +1,9 @@
+Version 2.1.5
+
+- Major speed improvements to object encoding (decoding speed is unaffected)
+- FIxed some potential bugs cuased by empty strings or collections
+- Fixed some minor memory leaks
+
 Version 2.1.4
 
 - Fixed bug when encoding NSURLs.

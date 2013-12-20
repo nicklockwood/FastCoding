@@ -20,8 +20,8 @@
 		017E301E1855FADE004AE6E4 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 017E301C1855FADE004AE6E4 /* Main.storyboard */; };
 		017E30211855FADE004AE6E4 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 017E30201855FADE004AE6E4 /* ViewController.m */; };
 		017E30231855FADE004AE6E4 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 017E30221855FADE004AE6E4 /* Images.xcassets */; };
-		01822044185E11A4007EBC35 /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01822043185E11A4007EBC35 /* FastCoder.m */; };
-		01822045185E11A4007EBC35 /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01822043185E11A4007EBC35 /* FastCoder.m */; };
+		01822044185E11A4007EBC35 /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01822043185E11A4007EBC35 /* FastCoder.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		01822045185E11A4007EBC35 /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01822043185E11A4007EBC35 /* FastCoder.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		0182205A185E5AF7007EBC35 /* Person.m in Sources */ = {isa = PBXBuildFile; fileRef = 01822059185E5AF7007EBC35 /* Person.m */; };
 		0182205B185E5AF7007EBC35 /* Person.m in Sources */ = {isa = PBXBuildFile; fileRef = 01822059185E5AF7007EBC35 /* Person.m */; };
 		0182205E185E5FF7007EBC35 /* Friend.m in Sources */ = {isa = PBXBuildFile; fileRef = 0182205D185E5FF7007EBC35 /* Friend.m */; };
@@ -406,7 +406,7 @@
 		017E30011855CE9D004AE6E4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_STATIC_ANALYZER_MODE = deep;
 				CLANG_WARN_CXX0X_EXTENSIONS = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
@@ -424,6 +424,7 @@
 				GCC_PREFIX_HEADER = "MacBenchmark/FastCoding-Prefix.pch";
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
 				GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = YES;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
@@ -447,7 +448,7 @@
 		017E30021855CE9D004AE6E4 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_STATIC_ANALYZER_MODE = deep;
 				CLANG_WARN_CXX0X_EXTENSIONS = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
@@ -466,6 +467,7 @@
 				GCC_PREFIX_HEADER = "MacBenchmark/FastCoding-Prefix.pch";
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES;
 				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
 				GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = YES;
 				GCC_WARN_ABOUT_MISSING_NEWLINE = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
@@ -493,7 +495,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -520,13 +522,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
 				);
-				GCC_OPTIMIZATION_LEVEL = fast;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "iOSBenchmark/FastCodingTest-Prefix.pch";
 				INFOPLIST_FILE = "iOSBenchmark/FastCodingTest-Info.plist";

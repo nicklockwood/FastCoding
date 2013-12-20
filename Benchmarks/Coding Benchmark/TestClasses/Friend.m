@@ -26,4 +26,14 @@
     [coder encodeObject:self.name forKey:@"name"];
 }
 
+#if !__has_feature(objc_arc)
+
+- (void)dealloc
+{
+    [_name release];
+    [super dealloc];
+}
+
+#endif
+
 @end

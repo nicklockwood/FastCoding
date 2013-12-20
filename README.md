@@ -5,9 +5,9 @@ FastCoder is a high-performance binary serialization format for Cocoa objects an
 
 The design goals of the FastCoder library are to be fast, flexible and secure.
 
-FastCoder is already faster (on average) for reading than any of the built-in serialization mechanisms in Cocoa, and is faster for writing than NSKeyedArchiver (though a little slower than JSON or Plist writing). File size is smaller than NSKeyedArchiver, and comparable to the other methods. 
+FastCoder is already faster (on average) for reading than any of the built-in serialization mechanisms in Cocoa, and is faster for writing than any mechanism except for JSON (which doesn't support arbitrary object types). File size is smaller than NSKeyedArchiver, and comparable to the other methods. 
 
-FastCoder supports more data types than either JSON or Plist coding (including NSURL, NSValue, NSSet and NSOrderedSet), and allows all supported data types to be used as the keys in a dictionary, not just strings.
+FastCoder supports more data types than either JSON or Plist coding (including NSURL, NSValue, NSSet and NSOrderedSet), and allows all supported object types to be used as the keys in a dictionary, not just strings.
 
 FastCoder can also serialize your custom classes automatically using property inspection. For cases where this doesn't work automatically, you can easily implement your own serialization using the FastCoding Protocol.
 

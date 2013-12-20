@@ -60,4 +60,27 @@
     [coder encodeObject:self.randomArrayItem forKey:@"randomArrayItem"];
 }
 
+#if !__has_feature(objc_arc)
+
+- (void)dealloc
+{
+    [_guid release];
+    [_balance release];
+    [_picture release];
+    [_name release];
+    [_gender release];
+    [_company release];
+    [_email release];
+    [_phone release];
+    [_address release];
+    [_about release];
+    [_registered release];
+    [_tags release];
+    [_friends release];
+    [_randomArrayItem release];
+    [super dealloc];
+}
+
+#endif
+
 @end
