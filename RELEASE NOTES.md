@@ -1,3 +1,7 @@
+Version 2.1.6
+
+- Fixed some conversion warnings when using ARC
+
 Version 2.1.5
 
 - Major speed improvements to object encoding (decoding speed is unaffected)

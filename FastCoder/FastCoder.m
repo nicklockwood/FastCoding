@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 2.1.5
+//  Version 2.1.6
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -259,15 +259,16 @@ static id FCReadDictionary(NSUInteger *offset, const void *input, NSUInteger tot
     uint32_t count = FCReadUInt32(offset, input, total);
     __autoreleasing NSDictionary *dict = nil;
     if (count)
-    {
-        __unsafe_unretained id *keys = (__unsafe_unretained id *)malloc(count * sizeof(id));
-        __unsafe_unretained id *objects = (__unsafe_unretained id *)malloc(count * sizeof(id));
+    {        
+        __autoreleasing id *keys = (__autoreleasing id *)malloc(count * sizeof(id));
+        __autoreleasing id *objects = (__autoreleasing id *)malloc(count * sizeof(id));
         for (uint32_t i = 0; i < count; i++)
         {
             objects[i] = FCReadObject(offset, input, total, cache);
             keys[i] = FCReadObject(offset, input, total, cache);
         }
-        dict = CFBridgingRelease(CFDictionaryCreate(NULL, (const void **)keys, (const void **)objects, count, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
+        
+        dict = [NSDictionary dictionaryWithObjects:objects forKeys:keys count:count];
         free(objects);
         free(keys);
     }
@@ -288,7 +289,7 @@ static id FCReadMutableDictionary(NSUInteger *offset, const void *input, NSUInte
     {
         __autoreleasing id value = FCReadObject(offset, input, total, cache);
         __autoreleasing id key = FCReadObject(offset, input, total, cache);
-        CFDictionarySetValue((__bridge CFMutableDictionaryRef)dict, key, value);
+        CFDictionarySetValue((__bridge CFMutableDictionaryRef)dict, (__bridge const void *)key, (__bridge const void *)value);
     }
     return dict;
 }
@@ -299,12 +300,12 @@ static id FCReadArray(NSUInteger *offset, const void *input, NSUInteger total, _
     __autoreleasing NSArray *array = nil;
     if (count)
     {
-        __unsafe_unretained id *objects = (__unsafe_unretained id *)malloc(count * sizeof(id));
+        __autoreleasing id *objects = (__autoreleasing id *)malloc(count * sizeof(id));
         for (uint32_t i = 0; i < count; i++)
         {
             objects[i] = FCReadObject(offset, input, total, cache);
         }
-        array = CFBridgingRelease(CFArrayCreate(NULL, (const void **)objects, count, &kCFTypeArrayCallBacks));
+        array = [NSArray arrayWithObjects:objects count:count];
         free(objects);
     }
     else
@@ -322,7 +323,7 @@ static id FCReadMutableArray(NSUInteger *offset, const void *input, NSUInteger t
     FCCacheReadObject(array, cache);
     for (uint32_t i = 0; i < count; i++)
     {
-        CFArrayAppendValue((__bridge CFMutableArrayRef)array, FCReadObject(offset, input, total, cache));
+        CFArrayAppendValue((__bridge CFMutableArrayRef)array, (__bridge void *)FCReadObject(offset, input, total, cache));
     }
     return array;
 }
@@ -333,7 +334,7 @@ static id FCReadSet(NSUInteger *offset, const void *input, NSUInteger total, __u
     __autoreleasing NSSet *set = nil;
     if (count)
     {
-        __unsafe_unretained id *objects = (__unsafe_unretained id *)malloc(count * sizeof(id));
+        __autoreleasing id *objects = (__autoreleasing id *)malloc(count * sizeof(id));
         for (uint32_t i = 0; i < count; i++)
         {
             objects[i] = FCReadObject(offset, input, total, cache);
@@ -367,7 +368,7 @@ static id FCReadOrderedSet(NSUInteger *offset, const void *input, NSUInteger tot
     __autoreleasing NSOrderedSet *set = nil;
     if (count)
     {
-        __unsafe_unretained id *objects = (__unsafe_unretained id *)malloc(count * sizeof(id));
+        __autoreleasing id *objects = (__autoreleasing id *)malloc(count * sizeof(id));
         for (uint32_t i = 0; i < count; i++)
         {
             objects[i] = FCReadObject(offset, input, total, cache);
@@ -475,12 +476,12 @@ static id FCReadClassDefinition(NSUInteger *offset, const void *input, NSUIntege
     uint32_t count = FCReadUInt32(offset, input, total);
     if (count)
     {
-        __unsafe_unretained id *objects = (__unsafe_unretained id *)malloc(count * sizeof(id));
+        __autoreleasing id *objects = (__autoreleasing id *)malloc(count * sizeof(id));
         for (uint32_t i = 0; i < count; i++)
         {
             objects[i] = FCReadString(offset, input, total, nil);
         }
-        definition.propertyKeys = CFBridgingRelease(CFArrayCreate(NULL, (const void **)objects, count, &kCFTypeArrayCallBacks));
+        definition.propertyKeys = [NSArray arrayWithObjects:objects count:count];
         free(objects);
     }
     
