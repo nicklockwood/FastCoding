@@ -1,3 +1,7 @@
+Version 2.1.7
+
+- Fixed crash when saving
+
 Version 2.1.6
 
 - Fixed some conversion warnings when using ARC

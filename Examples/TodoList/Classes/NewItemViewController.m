@@ -10,17 +10,22 @@
 #import "TodoList.h"
 #import "TodoItem.h"
 
-@interface NewItemViewController()
+
+@interface NewItemViewController ()
 
 @property (nonatomic, strong) TodoItem *item;
+@property (nonatomic, strong) IBOutlet UITextView *textField;
 
 @end
 
 
 @implementation NewItemViewController
 
-#pragma mark -
-#pragma mark UITextViewDelegate methods
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [self.textField becomeFirstResponder];
+}
 
 - (void)textViewDidChange:(UITextView *)textView
 {	
