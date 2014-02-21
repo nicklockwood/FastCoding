@@ -509,7 +509,15 @@ static id FCReadObjectInstance(NSUInteger *offset, const void *input, NSUInteger
     NSUInteger cacheIndex = FCCacheReadObject(object, cache);
     for (__unsafe_unretained NSString *key in definition.propertyKeys)
     {
-        [object setValue:FCReadObject(offset, input, total, cache) forKey:key];
+		id value = FCReadObject(offset, input, total, cache);
+		if ([[[object class] codingKeysRequiringMigration] containsObject:key])
+		{
+			[object migrateValue:value forCodingKey:key];
+		}
+		else
+		{
+			[object setValue:value forKey:key];
+		}
     }
     id newObject = [object awakeAfterFastCoding];
     if (newObject != object)
@@ -878,6 +886,11 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     return codableKeys;
 }
 
++ (NSSet *)codingKeysRequiringMigration
+{
+	return nil;
+}
+
 - (id)awakeAfterFastCoding
 {
     return self;
@@ -886,6 +899,11 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 - (Class)classForFastCoding
 {
     return [self classForCoder];
+}
+
+- (void)migrateValue:(id)value forCodingKey:(NSString *)codingKey
+{
+	
 }
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output rootObject:(__unsafe_unretained id)root cache:(__unsafe_unretained id)cache
