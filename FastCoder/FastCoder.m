@@ -806,9 +806,9 @@ CFHashCode FCDictionaryHashCallback(const void* value)
         };
         
         //write root object
-        CFMutableDictionaryRef cache = CFDictionaryCreateMutable(NULL, 0, &keyCallbacks, &valueCallbacks);
-        uint32_t objectCount = (uint32_t)CFDictionaryGetCount(cache);
-        FCWriteObject(object, nil, output, (__bridge id)cache);
+        NSMutableDictionary *cache = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &keyCallbacks, &valueCallbacks));
+        uint32_t objectCount = (uint32_t)cache.count;
+        FCWriteObject(object, nil, output, cache);
         
         //set object count and return
         [output replaceBytesInRange:NSMakeRange(sizeof(header), sizeof(uint32_t)) withBytes:&objectCount];
