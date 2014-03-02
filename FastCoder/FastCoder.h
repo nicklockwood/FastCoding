@@ -40,8 +40,11 @@ extern NSString *const FastCodingException;
 @interface NSObject (FastCoding)
 
 + (NSArray *)fastCodingKeys;
++ (NSSet *)fastCodingKeysRequiringMigration;
+
 - (id)awakeAfterFastCoding;
 - (Class)classForFastCoding;
+- (void)migrateValue:(id)value forFastCodingKey:(NSString *)codingKey;
 
 @end
 
