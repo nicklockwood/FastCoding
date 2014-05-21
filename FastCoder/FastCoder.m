@@ -33,6 +33,9 @@
 #import "FastCoder.h"
 #import <objc/message.h>
 
+#if TARGET_OS_IPHONE
+@import CoreGraphics;
+#endif
 
 #import <Availability.h>
 #if __has_feature(objc_arc)
