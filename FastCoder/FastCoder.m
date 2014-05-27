@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 2.1.8
+//  Version 2.1.9
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -32,6 +32,7 @@
 
 #import "FastCoder.h"
 #import <objc/message.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 
 #import <Availability.h>
@@ -283,7 +284,7 @@ static id FCReadDictionary(NSUInteger *offset, const void *input, NSUInteger tot
 static id FCReadMutableDictionary(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache)
 {
     uint32_t count = FCReadUInt32(offset, input, total);
-    __autoreleasing NSMutableDictionary *dict = CFBridgingRelease(CFDictionaryCreateMutable(NULL, count, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
+    __autoreleasing NSMutableDictionary *dict = CFBridgingRelease(CFDictionaryCreateMutable(NULL, (CFIndex)count, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
     FCCacheReadObject(dict, cache);
     for (uint32_t i = 0; i < count; i++)
     {

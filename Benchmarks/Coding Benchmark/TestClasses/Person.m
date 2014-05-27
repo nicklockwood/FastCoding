@@ -14,12 +14,12 @@
 {
     if ((self = [super init]))
     {
-        self.identifier = [decoder decodeIntegerForKey:@"identifier"];
+        self.identifier = (NSUInteger)[decoder decodeIntegerForKey:@"identifier"];
         self.guid = [decoder decodeObjectForKey:@"guid"];
         self.isActive = [decoder decodeBoolForKey:@"isActive"];
         self.balance = [decoder decodeObjectForKey:@"balance"];
         self.picture = [decoder decodeObjectForKey:@"picture"];
-        self.age = [decoder decodeIntegerForKey:@"age"];
+        self.age = (NSUInteger)[decoder decodeIntegerForKey:@"age"];
         self.name = [decoder decodeObjectForKey:@"name"];
         self.gender = [decoder decodeObjectForKey:@"gender"];
         self.company = [decoder decodeObjectForKey:@"company"];

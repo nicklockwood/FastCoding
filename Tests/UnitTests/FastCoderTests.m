@@ -5,7 +5,8 @@
 //  Copyright (c) 2012 Charcoal Design. All rights reserved.
 //
 
-#import "FastCoderTests.h"
+
+#import <XCTest/XCTest.h>
 #import "FastCoder.h"
 
 
@@ -21,15 +22,17 @@
 
 @implementation Model
 
-- (BOOL)isEqual:(Model *)object
+- (BOOL)isEqual:(id)object
 {
     if ([object isKindOfClass:[self class]])
     {
+        Model *model = object;
+        
         return
-        ((!self.text2 && !object.text2) || [self.text2 isEqual:object.text2]) &&
-        ((!self.textNew && !object.textNew) || [self.textNew isEqual:object.textNew]) &&
-        ((!self.array1 && !object.array1) || [self.array1 isEqual:object.array1]) &&
-        ((!self.array2 && !object.array2) || [self.array2 isEqual:object.array2]);
+        ((!self.text2 && !model.text2) || [self.text2 isEqual:model.text2]) &&
+        ((!self.textNew && !model.textNew) || [self.textNew isEqual:model.textNew]) &&
+        ((!self.array1 && !model.array1) || [self.array1 isEqual:model.array1]) &&
+        ((!self.array2 && !model.array2) || [self.array2 isEqual:model.array2]);
     }
     return NO;
 }
@@ -37,10 +40,10 @@
 - (id)copyWithZone:(NSZone *)zone
 {
     Model *copy = [[Model allocWithZone:zone] init];
-    copy.text2 = _text2;
-    copy.textNew = _textNew;
-    copy.array1 = _array1;
-    copy.array2 = _array2;
+    copy.text2 = self.text2;
+    copy.textNew = self.textNew;
+    copy.array1 = self.array1;
+    copy.array2 = self.array2;
     return copy;
 }
 
@@ -48,6 +51,11 @@
 {
     return [self copy];
 }
+
+@end
+
+
+@interface FastCoderTests : XCTestCase
 
 @end
 
@@ -70,7 +78,7 @@
     Model *newModel = [FastCoder objectWithData:data];
     
     //check properties
-    NSAssert([model isEqual:newModel], @"ChangingModel text failed");
+    XCTAssertEqualObjects(model, newModel, @"ChangingModel text failed");
 }
 
 - (void)testAliasing
@@ -86,8 +94,8 @@
     model = [FastCoder objectWithData:data];
     
     //check properties
-    NSAssert([model.array1 isEqualToArray:model.array2], @"Aliasing failed");
-    NSAssert(model.array1 == model.array2, @"Aliasing failed");
+    XCTAssertEqualObjects(model.array1, model.array2, @"Aliasing failed");
+    XCTAssertEqual(model.array1, model.array2, @"Aliasing failed");
     
     //now make them different but equal
     model.array2 = @[@1, @2];
@@ -99,8 +107,8 @@
     model = [FastCoder objectWithData:data];
     
     //check properties
-    NSAssert([model.array1 isEqualToArray:model.array2], @"Aliasing failed");
-    NSAssert(model.array1 != model.array2, @"Aliasing failed");
+    XCTAssertEqualObjects(model.array1, model.array2, @"Aliasing failed");
+    XCTAssertNotEqual(model.array1, model.array2, @"Aliasing failed");
 }
 
 - (void)testAliasingWithSubstitution
@@ -115,7 +123,7 @@
     array = [FastCoder objectWithData:data];
     
     //check properties
-    NSAssert(array[0] == array[1], @"Aliasing failed");
+    XCTAssertEqual(array[0], array[1], @"Aliasing failed");
 }
 
 - (void)testBootstrapping
@@ -123,14 +131,14 @@
     //create JSON with circular reference
     NSString *json = @"{ \"foo\": { \"$alias\": \"bar.1\" }, \"bar\": [ \"Goodbye\", \"Cruel\", \"World\" ] }";
     NSData *data = [json dataUsingEncoding:NSUTF8StringEncoding];
-    NSDictionary *object = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+    NSDictionary *object = [NSJSONSerialization JSONObjectWithData:data options:(NSJSONReadingOptions)0 error:NULL];
     
     //convert to FastCoded data
     data = [FastCoder dataWithRootObject:object];
     object = [FastCoder objectWithData:data];
     
     //check
-    NSAssert([object[@"foo"] isEqualTo:object[@"bar"][1]], @"Bootstrap failed");
+    XCTAssertEqualObjects(object[@"foo"], object[@"bar"][1], @"Bootstrap failed");
 }
 
 - (void)testURLEncoding
@@ -144,7 +152,7 @@
     id output = [FastCoder objectWithData:data];
     
     //check
-    NSAssert([input isEqualTo:output], @"URLEncoding failed");
+    XCTAssertEqualObjects(input, output, @"URLEncoding failed");
 }
 
 @end

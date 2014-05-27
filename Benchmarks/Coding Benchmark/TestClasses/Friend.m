@@ -14,7 +14,7 @@
 {
     if ((self = [super init]))
     {
-        self.identifier = [decoder decodeIntegerForKey:@"identifier"];
+        self.identifier = (NSUInteger)[decoder decodeIntegerForKey:@"identifier"];
         self.name = [decoder decodeObjectForKey:@"name"];
     }
     return self;

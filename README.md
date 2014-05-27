@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/nicklockwood/FastCoding.svg)](https://travis-ci.org/nicklockwood/FastCoding)
+
+
 Purpose
 --------------
 
@@ -15,7 +18,7 @@ FastCoder can also serialize your custom classes automatically using property in
 Supported OS & SDK Versions
 -----------------------------
 
-* Supported build target - iOS 7.0 / Mac OS 10.9 (Xcode 5.0, Apple LLVM compiler 5.0)
+* Supported build target - iOS 7.1 / Mac OS 10.9 (Xcode 5.0, Apple LLVM compiler 5.0)
 * Earliest supported deployment target - iOS 5.0 / Mac OS 10.7
 * Earliest compatible deployment target - iOS 4.0 / Mac OS 10.6
 
@@ -205,6 +208,11 @@ The chunk types supported by FastCoding are:
     
 Release notes
 ------------------
+
+Version 2.1.9
+
+- Now imports CoreGraphics if not already included in .pch file
+- Fixed some new warnings that cropped up in latest Xcode
 
 Version 2.1.8
 
