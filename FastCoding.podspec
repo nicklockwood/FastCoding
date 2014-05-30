@@ -4,6 +4,7 @@ Pod::Spec.new do |s|
   s.license  = 'zlib'
   s.summary  = 'Faster, more flexible replacement for NSKeyedArchiver, NSPropertyList and NSJSONSerializer.'
   s.homepage = 'https://github.com/nicklockwood/FastCoding'
+  s.social_media_url = 'https://twitter.com/nicklockwood'
   s.authors  = 'Nick Lockwood'
   s.source   = { :git => 'https://github.com/nicklockwood/FastCoding.git', :tag => '2.1.9' }
   s.source_files = 'FastCoder'
