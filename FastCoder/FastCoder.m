@@ -98,7 +98,9 @@ typedef NS_ENUM(uint32_t, FCType)
     FCTypeRect,
     FCTypeRange,
     FCTypeAffineTransform,
-    FCType3DTransform
+    FCType3DTransform,
+    FCTypeMutableIndexSet,
+    FCTypeIndexSet,
 };
 
 
@@ -601,6 +603,23 @@ static id FCRead3DTransform(NSUInteger *offset, const void *input, NSUInteger to
     return value;
 }
 
+static id FCReadMutableIndexSet(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache)
+{
+    uint32_t rangeCount = FCReadUInt32(offset, input, total);
+    __autoreleasing NSMutableIndexSet *indexSet = [NSMutableIndexSet indexSet];
+    FCCacheReadObject(indexSet, cache);
+    for (uint32_t i=0; i<rangeCount; i++) {
+        NSRange range = {FCReadUInt32(offset, input, total), FCReadUInt32(offset, input, total)};
+        [indexSet addIndexesInRange:range];
+    }
+    return indexSet;
+}
+
+static id FCReadIndexSet(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache)
+{
+    return [FCReadMutableIndexSet(offset, input, total, cache) copy];
+}
+
 static id FCReadObject(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache)
 {
     static id (*constructors[])(NSUInteger *, const void *, NSUInteger, id) =
@@ -636,6 +655,8 @@ static id FCReadObject(NSUInteger *offset, const void *input, NSUInteger total, 
         FCReadRange,
         FCReadAffineTransform,
         FCRead3DTransform,
+        FCReadMutableIndexSet,
+        FCReadIndexSet,
     };
     
     FCType type = FCReadUInt32(offset, input, total);
@@ -929,6 +950,31 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     FCCacheWrittenObject(self, cache);
     FCWriteUInt32(([self classForCoder] == [NSMutableString class])? FCTypeMutableString: FCTypeString, output);
     FCWriteString(self, output);
+}
+
+@end
+
+
+@implementation NSIndexSet (FastCoding)
+
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output rootObject:(__unused id)object cache:(__unsafe_unretained id)cache
+{
+    BOOL mutable = ([self classForCoder] == [NSMutableIndexSet class]);
+    if (mutable) FCCacheWrittenObject(self, cache);
+    
+    NSUInteger __block rangeCount = 0; // I wish we could get this directly from NSSet...
+    [self enumerateRangesUsingBlock:^(NSRange range, BOOL *stop) {
+        rangeCount += 1;
+    }];
+
+    FCWriteUInt32(FCTypeIndexSet, output);
+    FCWriteUInt32(rangeCount, output);
+    [self enumerateRangesUsingBlock:^(NSRange range, BOOL *stop) {
+        FCWriteUInt32(range.location, output);
+        FCWriteUInt32(range.length, output);
+    }];
+    
+    if (!mutable) FCCacheWrittenObject(self, cache);
 }
 
 @end
