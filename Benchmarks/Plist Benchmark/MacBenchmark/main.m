@@ -9,6 +9,21 @@
 #import <Foundation/Foundation.h>
 #import "FastCoder.h"
 
+// the TestData.h file will be created at build time using the following shell script
+
+// cd "${SRCROOT}/"
+// /usr/bin/xxd -i "TestData.json" "MacBenchmark/TestData.h"
+
+// which converts the TestData.json file into a header containing the following:
+
+// unsigned char TestData_json[] = {...};
+// unsigned int TestData_json_len = ...;
+
+extern unsigned char TestData_json[];
+extern unsigned int TestData_json_len;
+
+#import "TestData.h"
+
 
 void LogLoading(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval);
 void LogLoading(NSString *name, NSTimeInterval start, NSTimeInterval loaded, NSTimeInterval parsed)
@@ -28,8 +43,8 @@ int main(__unused int argc, __unused const char * argv[])
 {
     @autoreleasepool
     {
-        NSString *testInputPath = @"/Users/nick/Dropbox/Open Source (GIT)/FastCoding/Benchmarks/Plist Benchmark/TestData.json";
-        NSData *data = [NSData dataWithContentsOfFile:testInputPath];
+        //load test data (encoded in the generated TestData.h file)
+        NSData *data = [NSData dataWithBytes:TestData_json length:TestData_json_len];
         id object = [NSJSONSerialization JSONObjectWithData:data options:(NSJSONReadingOptions)0 error:NULL];
         
         NSString *JSONPath = [NSTemporaryDirectory() stringByAppendingString:@"test.json"];

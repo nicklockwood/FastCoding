@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 2.1.9
+//  Version 2.2
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -54,7 +54,7 @@ NSString *const FastCodingException = @"FastCodingException";
 
 static const uint32_t FCIdentifier = 'FAST';
 static const uint16_t FCMajorVersion = 2;
-static const uint16_t FCMinorVersion = 1;
+static const uint16_t FCMinorVersion = 2;
 
 
 typedef struct
@@ -608,7 +608,8 @@ static id FCReadMutableIndexSet(NSUInteger *offset, const void *input, NSUIntege
     uint32_t rangeCount = FCReadUInt32(offset, input, total);
     __autoreleasing NSMutableIndexSet *indexSet = [NSMutableIndexSet indexSet];
     FCCacheReadObject(indexSet, cache);
-    for (uint32_t i=0; i<rangeCount; i++) {
+    for (uint32_t i = 0; i < rangeCount; i++)
+    {
         NSRange range = {FCReadUInt32(offset, input, total), FCReadUInt32(offset, input, total)};
         [indexSet addIndexesInRange:range];
     }
@@ -617,7 +618,18 @@ static id FCReadMutableIndexSet(NSUInteger *offset, const void *input, NSUIntege
 
 static id FCReadIndexSet(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache)
 {
-    return [FCReadMutableIndexSet(offset, input, total, cache) copy];
+    uint32_t rangeCount = FCReadUInt32(offset, input, total);
+    if (rangeCount == 1)
+    {
+        //common case optimisation
+        NSRange range = {FCReadUInt32(offset, input, total), FCReadUInt32(offset, input, total)};
+        return [NSIndexSet indexSetWithIndexesInRange:range];
+    }
+    else
+    {
+        *offset -= sizeof(uint32_t);
+        return [FCReadMutableIndexSet(offset, input, total, cache) copy];
+    }
 }
 
 static id FCReadObject(NSUInteger *offset, const void *input, NSUInteger total, __unsafe_unretained id cache)
@@ -962,16 +974,16 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     BOOL mutable = ([self classForCoder] == [NSMutableIndexSet class]);
     if (mutable) FCCacheWrittenObject(self, cache);
     
-    NSUInteger __block rangeCount = 0; // I wish we could get this directly from NSSet...
-    [self enumerateRangesUsingBlock:^(NSRange range, BOOL *stop) {
-        rangeCount += 1;
+    uint32_t __block rangeCount = 0; // I wish we could get this directly from NSSet...
+    [self enumerateRangesUsingBlock:^(__unused NSRange range, __unused BOOL *stop) {
+        rangeCount ++;
     }];
 
     FCWriteUInt32(FCTypeIndexSet, output);
     FCWriteUInt32(rangeCount, output);
-    [self enumerateRangesUsingBlock:^(NSRange range, BOOL *stop) {
-        FCWriteUInt32(range.location, output);
-        FCWriteUInt32(range.length, output);
+    [self enumerateRangesUsingBlock:^(NSRange range, __unused BOOL *stop) {
+        FCWriteUInt32((uint32_t)range.location, output);
+        FCWriteUInt32((uint32_t)range.length, output);
     }];
     
     if (!mutable) FCCacheWrittenObject(self, cache);

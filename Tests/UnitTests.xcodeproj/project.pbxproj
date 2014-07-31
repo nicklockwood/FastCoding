@@ -243,6 +243,7 @@
 					"-Wno-gnu-statement-expression",
 					"-Wno-objc-missing-property-synthesis",
 					"-Wno-sign-compare",
+					"-Wno-documentation-unknown-command",
 				);
 			};
 			name = Debug;
@@ -314,6 +315,7 @@
 					"-Wno-gnu-statement-expression",
 					"-Wno-objc-missing-property-synthesis",
 					"-Wno-sign-compare",
+					"-Wno-documentation-unknown-command",
 				);
 			};
 			name = Release;

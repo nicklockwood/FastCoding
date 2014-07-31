@@ -78,7 +78,7 @@
     Model *newModel = [FastCoder objectWithData:data];
     
     //check properties
-    XCTAssertEqualObjects(model, newModel, @"ChangingModel text failed");
+    XCTAssertEqualObjects(model, newModel);
 }
 
 - (void)testAliasing
@@ -94,8 +94,8 @@
     model = [FastCoder objectWithData:data];
     
     //check properties
-    XCTAssertEqualObjects(model.array1, model.array2, @"Aliasing failed");
-    XCTAssertEqual(model.array1, model.array2, @"Aliasing failed");
+    XCTAssertEqualObjects(model.array1, model.array2);
+    XCTAssertEqual(model.array1, model.array2);
     
     //now make them different but equal
     model.array2 = @[@1, @2];
@@ -107,8 +107,8 @@
     model = [FastCoder objectWithData:data];
     
     //check properties
-    XCTAssertEqualObjects(model.array1, model.array2, @"Aliasing failed");
-    XCTAssertNotEqual(model.array1, model.array2, @"Aliasing failed");
+    XCTAssertEqualObjects(model.array1, model.array2);
+    XCTAssertNotEqual(model.array1, model.array2);
 }
 
 - (void)testAliasingWithSubstitution
@@ -123,7 +123,7 @@
     array = [FastCoder objectWithData:data];
     
     //check properties
-    XCTAssertEqual(array[0], array[1], @"Aliasing failed");
+    XCTAssertEqual(array[0], array[1]);
 }
 
 - (void)testBootstrapping
@@ -138,7 +138,7 @@
     object = [FastCoder objectWithData:data];
     
     //check
-    XCTAssertEqualObjects(object[@"foo"], object[@"bar"][1], @"Bootstrap failed");
+    XCTAssertEqualObjects(object[@"foo"], object[@"bar"][1]);
 }
 
 - (void)testURLEncoding
@@ -152,7 +152,33 @@
     id output = [FastCoder objectWithData:data];
     
     //check
-    XCTAssertEqualObjects(input, output, @"URLEncoding failed");
+    XCTAssertEqualObjects(input, output);
+}
+
+- (void)testIndexSetEncoding
+{
+    //create index set
+    NSIndexSet *input = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, 99)];
+    
+    //convert to FastCoded data
+    NSData *data = [FastCoder dataWithRootObject:input];
+    id output = [FastCoder objectWithData:data];
+  
+    //check
+    XCTAssertEqualObjects(input, output);
+    
+    //create mutable index set
+    input = [NSMutableIndexSet indexSet];
+    [(NSMutableIndexSet *)input addIndexesInRange:NSMakeRange(0, 30)];
+    [(NSMutableIndexSet *)input addIndexesInRange:NSMakeRange(50, 80)];
+    
+    //convert to FastCoded data
+    data = [FastCoder dataWithRootObject:input];
+    output = [FastCoder objectWithData:data];
+    
+    //check
+    XCTAssertEqualObjects(input, output);
+    XCTAssertEqualObjects([input classForCoder], [NSMutableIndexSet class]);
 }
 
 @end

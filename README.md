@@ -18,7 +18,7 @@ FastCoder can also serialize your custom classes automatically using property in
 Supported OS & SDK Versions
 -----------------------------
 
-* Supported build target - iOS 7.1 / Mac OS 10.9 (Xcode 5.0, Apple LLVM compiler 5.0)
+* Supported build target - iOS 8.0 / Mac OS 10.9 (Xcode 6.0, Apple LLVM compiler 6.0)
 * Earliest supported deployment target - iOS 5.0 / Mac OS 10.7
 * Earliest compatible deployment target - iOS 4.0 / Mac OS 10.6
 
@@ -208,6 +208,12 @@ The chunk types supported by FastCoding are:
     
 Release notes
 ------------------
+ 
+Version 2.2
+ 
+- Encoding NSIndexSet and NSMutableIndexSet is now supported
+- Mac benchmark no longer relies on hardcoded path to json file
+- FastCoding 2.2 is fully backwards compatible (can read version 2.0 or 2.1 files). FastCoding 2.2 files can be read by a 2.0 or 2.1 implementation provided that they do not include any of the new data types
 
 Version 2.1.9
 

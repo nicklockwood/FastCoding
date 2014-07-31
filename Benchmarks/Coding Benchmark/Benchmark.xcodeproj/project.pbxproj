@@ -203,6 +203,7 @@
 				017E2FEE1855CE9D004AE6E4 /* Sources */,
 				017E2FEF1855CE9D004AE6E4 /* Frameworks */,
 				017E2FF01855CE9D004AE6E4 /* CopyFiles */,
+				13535D12198A9E8800BBC59F /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -271,6 +272,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		13535D12198A9E8800BBC59F /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${SRCROOT}/TestData.json",
+			);
+			outputPaths = (
+				"${SRCROOT}/MacBenchmark/TestData.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"${SRCROOT}/\"\n/usr/bin/xxd -i \"TestData.json\" \"MacBenchmark/TestData.h\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		017E2FEE1855CE9D004AE6E4 /* Sources */ = {
