@@ -979,7 +979,7 @@ CFHashCode FCDictionaryHashCallback(const void* value)
         rangeCount ++;
     }];
 
-    FCWriteUInt32(FCTypeIndexSet, output);
+    FCWriteUInt32((mutable ? FCTypeMutableIndexSet : FCTypeIndexSet), output);
     FCWriteUInt32(rangeCount, output);
     [self enumerateRangesUsingBlock:^(NSRange range, __unused BOOL *stop) {
         FCWriteUInt32((uint32_t)range.location, output);
