@@ -204,6 +204,8 @@ The chunk types supported by FastCoding are:
     FCTypeRange                 an NSRange value
     FCTypeAffineTransform       a CGAffineTransform value
     FCType3DTransform           a CATransform3D value
+    FCTypeIndexSet              an NSIndexSet instance
+    FCTypeMutableIndexSet       an NSMutableIndexSet instance
     
     
 Release notes
