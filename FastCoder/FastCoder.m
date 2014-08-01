@@ -967,31 +967,6 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 @end
 
 
-@implementation NSIndexSet (FastCoding)
-
-- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output rootObject:(__unused id)object cache:(__unsafe_unretained id)cache
-{
-    BOOL mutable = ([self classForCoder] == [NSMutableIndexSet class]);
-    if (mutable) FCCacheWrittenObject(self, cache);
-    
-    uint32_t __block rangeCount = 0; // I wish we could get this directly from NSSet...
-    [self enumerateRangesUsingBlock:^(__unused NSRange range, __unused BOOL *stop) {
-        rangeCount ++;
-    }];
-
-    FCWriteUInt32(FCTypeIndexSet, output);
-    FCWriteUInt32(rangeCount, output);
-    [self enumerateRangesUsingBlock:^(NSRange range, __unused BOOL *stop) {
-        FCWriteUInt32((uint32_t)range.location, output);
-        FCWriteUInt32((uint32_t)range.length, output);
-    }];
-    
-    if (!mutable) FCCacheWrittenObject(self, cache);
-}
-
-@end
-
-
 @implementation NSNumber (FastCoding)
 
 - (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output rootObject:(__unused id)root cache:(__unsafe_unretained id)cache
@@ -1264,6 +1239,31 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     {
         FCWriteObject(value, root, output, cache);
     }
+    if (!mutable) FCCacheWrittenObject(self, cache);
+}
+
+@end
+
+
+@implementation NSIndexSet (FastCoding)
+
+- (void)FC_writeToOutput:(__unsafe_unretained NSMutableData *)output rootObject:(__unused id)object cache:(__unsafe_unretained id)cache
+{
+    BOOL mutable = ([self classForCoder] == [NSMutableIndexSet class]);
+    if (mutable) FCCacheWrittenObject(self, cache);
+    
+    uint32_t __block rangeCount = 0; // I wish we could get this directly from NSIndexSet...
+    [self enumerateRangesUsingBlock:^(__unused NSRange range, __unused BOOL *stop) {
+        rangeCount ++;
+    }];
+
+    FCWriteUInt32(mutable? FCTypeMutableIndexSet: FCTypeIndexSet, output);
+    FCWriteUInt32(rangeCount, output);
+    [self enumerateRangesUsingBlock:^(NSRange range, __unused BOOL *stop) {
+        FCWriteUInt32((uint32_t)range.location, output);
+        FCWriteUInt32((uint32_t)range.length, output);
+    }];
+    
     if (!mutable) FCCacheWrittenObject(self, cache);
 }
 

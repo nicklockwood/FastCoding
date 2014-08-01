@@ -178,7 +178,7 @@
     
     //check
     XCTAssertEqualObjects(input, output);
-    XCTAssertEqualObjects([input classForCoder], [NSMutableIndexSet class]);
+    XCTAssertEqualObjects([output classForCoder], [NSMutableIndexSet class]);
 }
 
 @end
