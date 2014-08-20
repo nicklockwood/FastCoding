@@ -990,6 +990,12 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     FCWriteObject(key, self);
 }
 
+- (void)encodeInteger:(NSInteger)intv forKey:(__unsafe_unretained NSString *)key
+{
+    FCWriteObject(@(intv), self);
+    FCWriteObject(key, self);
+}
+
 - (void)encodeInt32:(int32_t)intv forKey:(__unsafe_unretained NSString *)key
 {
     FCWriteObject(@(intv), self);
@@ -1025,6 +1031,11 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 @implementation FCNSDecoder
 
+- (BOOL)containsValueForKey:(NSString *)key
+{
+    return _properties[key] != nil;
+}
+
 - (id)decodeObjectForKey:(__unsafe_unretained NSString *)key
 {
     return _properties[key];
@@ -1038,6 +1049,11 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 - (int)decodeIntForKey:(__unsafe_unretained NSString *)key
 {
     return [_properties[key] intValue];
+}
+
+- (NSInteger)decodeIntegerForKey:(__unsafe_unretained NSString *)key
+{
+    return [_properties[key] integerValue];
 }
 
 - (int32_t)decodeInt32ForKey:(__unsafe_unretained NSString *)key
