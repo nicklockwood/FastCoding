@@ -26,6 +26,11 @@
     [coder encodeObject:self.name forKey:@"name"];
 }
 
+- (BOOL)preferFastCoding
+{
+    return YES;
+}
+
 #if !__has_feature(objc_arc)
 
 - (void)dealloc

@@ -73,7 +73,11 @@ This method is called after an object has been deserialised using the FastCoding
     - (Class)classForFastCoding;
     
 This method is used to supply an alternative class to use for coding/decoding an object. This works the same way as the -classForCoder method of NSCoding, and by default returns the same value.
+ 
+    - (BOOL)preferFastCoding;
 
+Because FastCoding automatically supports NSCoding, any object that conforms to the NSCoding protocol (except for types that are explicitly supported by FastCoding) will be encoded using the NSCoding methods. This is better for compatibility purposes, but is slightly slower than using the FastCoding protocol. If your class supports both NSCoding and FastCoding, and you would prefer FastCoder to use the FastCoding protocol, override this method and return YES (the default value is NO).
+ 
 
 Overriding Default FastCoding Behaviour
 -------------------------------------------
@@ -89,6 +93,8 @@ If you wish to encode additional data that is not represented by an @property, o
 If you wish to substitute a different class for decoding, you can implement the -classForFastCoding method and FastCoding will encode the object as that class instead. If you wish to substitute a different object after decoding, use the -awakeAfterFastCoding method.
 
 If you have removed or renamed a property of a class, and want to provide backward compatibility for a previously saved FastCoder file, you should implement a private setter method for the old property, which you can then map to wherever it should go in the new object structure. E.g. if the old property was called foo, add a private -setFoo: method. Alternatively, override the -setValue:forUndefinedKey: method to gracefully handle any unknown property.
+ 
+If you want more precise control of the coding, such as using different names for keys, etc. then you can implement the NSCoding protocol. By default, if a class implements NSCoding, FastCoder will rely on the NSCoding methods to encode the object instead of automatically detecting the keys.
 
 
 Security
@@ -194,7 +200,7 @@ The chunk types supported by FastCoding are:
     FCTypeMutableSet            an NSMutableSet instance
     FCTypeMutableOrderedSet     an NSMutableOrderedSet instance
     FCTypeMutableData           an NSMutableData instance
-    FCTypeClassDefinition       a class definition (this is a private, internal object type used for object encoding)
+    FCTypeClassDefinition       a class definition (this is a private, internal type used for object encoding)
     FCTypeObject                an arbitrary object, encoded using the FastCoding protocol
     FCTypeNil                   a nil value (not the same as NSNull), used for nil object properties
     FCTypeURL                   an NSURL value
@@ -206,10 +212,18 @@ The chunk types supported by FastCoding are:
     FCType3DTransform           a CATransform3D value
     FCTypeIndexSet              an NSIndexSet instance
     FCTypeMutableIndexSet       an NSMutableIndexSet instance
+    FCTypeNSCodedObject         an NSCoded object
     
     
 Release notes
 ------------------
+
+Version 2.3
+ 
+- FastCoding now includes compatibility for NSCoding, so any class that supports NSCoding will now be encoded by calling the NSCoding methods instead of using the FastCoding protocol (this is slightly slower, but more compatible)
+- Fixed a bug in NSIndexSet decoding
+- Fixed a minor memory leak in FCClassDefinition
+- FastCoding 2.3 is fully backwards compatible (can read any version 2.x file). FastCoding 2.3 files can be read by a 2.2 implementation provided that they do not include NSCoded objects
  
 Version 2.2
  

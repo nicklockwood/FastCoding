@@ -60,6 +60,11 @@
     [coder encodeObject:self.randomArrayItem forKey:@"randomArrayItem"];
 }
 
+- (BOOL)preferFastCoding
+{
+    return YES;
+}
+
 #if !__has_feature(objc_arc)
 
 - (void)dealloc

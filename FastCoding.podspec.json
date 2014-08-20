@@ -1,13 +1,13 @@
 {
   "name": "FastCoding",
-  "version": "2.2",
+  "version": "2.3",
   "license": "zlib",
   "summary": "Faster, more flexible replacement for NSKeyedArchiver, NSPropertyList and NSJSONSerializer.",
   "homepage": "https://github.com/nicklockwood/FastCoding",
   "authors": "Nick Lockwood",
   "source": {
     "git": "https://github.com/nicklockwood/FastCoding.git",
-    "tag": "2.2"
+    "tag": "2.3"
   },
   "source_files": "FastCoder",
   "requires_arc": false,
