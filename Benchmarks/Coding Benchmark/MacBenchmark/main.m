@@ -23,20 +23,20 @@ extern unsigned char TestData_json[];
 extern unsigned int TestData_json_len;
 
 #import "TestData.h"
-
-
-void LogLoading(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval);
-void LogLoading(NSString *name, NSTimeInterval start, NSTimeInterval loaded, NSTimeInterval parsed)
-{
-    NSLog(@"%@ loading: %.0f ms, parsing: %.0f ms, total: %.0f ms", name, (loaded - start) * 1000, (parsed - loaded) * 1000, (parsed - start) * 1000);
-}
-
-void LogSaving(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval);
-void LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written, NSTimeInterval saved)
-{
-    NSLog(@"%@ writing: %.0f ms, saving: %.0f ms, total: %.0f ms", name, (written - start) * 1000, (saved - written) * 1000, (saved - start) * 1000);
-}
 #import <QuartzCore/QuartzCore.h>
+
+
+static void LogLoading(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval);
+static void LogLoading(NSString *name, NSTimeInterval start, NSTimeInterval loaded, NSTimeInterval parsed)
+{
+    printf("%s loading: %.0f ms, parsing: %.0f ms, total: %.0f ms\n", [name UTF8String], (loaded - start) * 1000, (parsed - loaded) * 1000, (parsed - start) * 1000);
+}
+
+static void LogSaving(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval, long long);
+static void LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written, NSTimeInterval saved, long long bytes)
+{
+    printf("%s writing: %.0f ms, saving: %.0f ms, total: %.0f ms, size: %lld bytes\n", [name UTF8String], (written - start) * 1000, (saved - written) * 1000, (saved - start) * 1000, bytes);
+}
 
 
 int main(__unused int argc, __unused const char * argv[])
@@ -63,7 +63,7 @@ int main(__unused int argc, __unused const char * argv[])
         //save keyed archive
         [data writeToFile:KeyedArchivePath atomically:NO];
         CFTimeInterval keyedArchiveSaved = CFAbsoluteTimeGetCurrent();
-        LogSaving(@"Keyed Archive", start, keyedArchiveWritten, keyedArchiveSaved);
+        LogSaving(@"Keyed Archive", start, keyedArchiveWritten, keyedArchiveSaved, (long long)[data length]);
         
         //load keyed archive
         data = [NSData dataWithContentsOfFile:KeyedArchivePath];
@@ -81,7 +81,7 @@ int main(__unused int argc, __unused const char * argv[])
         //save fast archive
         [data writeToFile:FastArchivePath atomically:NO];
         CFTimeInterval fastArchiveSaved = CFAbsoluteTimeGetCurrent();
-        LogSaving(@"Fast Archive", keyedArchiveParsed, fastArchiveWritten, fastArchiveSaved);
+        LogSaving(@"Fast Archive", keyedArchiveParsed, fastArchiveWritten, fastArchiveSaved, (long long)[data length]);
         
         //load fast archive
         data = [NSData dataWithContentsOfFile:FastArchivePath];

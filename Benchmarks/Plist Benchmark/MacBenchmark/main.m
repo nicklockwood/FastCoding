@@ -25,16 +25,16 @@ extern unsigned int TestData_json_len;
 #import "TestData.h"
 
 
-void LogLoading(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval);
-void LogLoading(NSString *name, NSTimeInterval start, NSTimeInterval loaded, NSTimeInterval parsed)
+static void LogLoading(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval);
+static void LogLoading(NSString *name, NSTimeInterval start, NSTimeInterval loaded, NSTimeInterval parsed)
 {
-    NSLog(@"%@ loading: %.0f ms, parsing: %.0f ms, total: %.0f ms", name, (loaded - start) * 1000, (parsed - loaded) * 1000, (parsed - start) * 1000);
+    printf("%s loading: %.0f ms, parsing: %.0f ms, total: %.0f ms\n", [name UTF8String], (loaded - start) * 1000, (parsed - loaded) * 1000, (parsed - start) * 1000);
 }
 
-void LogSaving(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval);
-void LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written, NSTimeInterval saved)
+static void LogSaving(NSString *, NSTimeInterval, NSTimeInterval, NSTimeInterval, long long);
+static void LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written, NSTimeInterval saved, long long bytes)
 {
-    NSLog(@"%@ writing: %.0f ms, saving: %.0f ms, total: %.0f ms", name, (written - start) * 1000, (saved - written) * 1000, (saved - start) * 1000);
+    printf("%s writing: %.0f ms, saving: %.0f ms, total: %.0f ms, bytes: %lld bytes\n", [name UTF8String], (written - start) * 1000, (saved - written) * 1000, (saved - start) * 1000, bytes);
 }
 #import <QuartzCore/QuartzCore.h>
 
@@ -61,7 +61,7 @@ int main(__unused int argc, __unused const char * argv[])
         //save json
         [data writeToFile:JSONPath atomically:NO];
         CFTimeInterval jsonSaved = CFAbsoluteTimeGetCurrent();
-        LogSaving(@"JSON", start, jsonWritten, jsonSaved);
+        LogSaving(@"JSON", start, jsonWritten, jsonSaved, (long long)[data length]);
         
         //load json
         data = [NSData dataWithContentsOfFile:JSONPath];
@@ -79,7 +79,7 @@ int main(__unused int argc, __unused const char * argv[])
         //save binary plist
         [data writeToFile:PLISTPath atomically:NO];
         CFTimeInterval plistSaved = CFAbsoluteTimeGetCurrent();
-        LogSaving(@"Plist", jsonParsed, plistWritten, plistSaved);
+        LogSaving(@"Plist", jsonParsed, plistWritten, plistSaved, (long long)[data length]);
         
         //load binary plist
         data = [NSData dataWithContentsOfFile:PLISTPath];
@@ -98,7 +98,7 @@ int main(__unused int argc, __unused const char * argv[])
         //save keyed archive
         [data writeToFile:KeyedArchivePath atomically:NO];
         CFTimeInterval keyedArchiveSaved = CFAbsoluteTimeGetCurrent();
-        LogSaving(@"Keyed Archive", plistParsed, keyedArchiveWritten, keyedArchiveSaved);
+        LogSaving(@"Keyed Archive", plistParsed, keyedArchiveWritten, keyedArchiveSaved, (long long)[data length]);
         
         //load keyed archive
         data = [NSData dataWithContentsOfFile:KeyedArchivePath];
@@ -116,7 +116,7 @@ int main(__unused int argc, __unused const char * argv[])
         //save fast archive
         [data writeToFile:FastArchivePath atomically:NO];
         CFTimeInterval fastArchiveSaved = CFAbsoluteTimeGetCurrent();
-        LogSaving(@"Fast Archive", keyedArchiveParsed, fastArchiveWritten, fastArchiveSaved);
+        LogSaving(@"Fast Archive", keyedArchiveParsed, fastArchiveWritten, fastArchiveSaved, (long long)[data length]);
         
         //load fast archive
         data = [NSData dataWithContentsOfFile:FastArchivePath];

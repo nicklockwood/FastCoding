@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 2.3
+//  Version 3.0 beta
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -54,8 +54,8 @@ NSString *const FastCodingException = @"FastCodingException";
 
 
 static const uint32_t FCIdentifier = 'FAST';
-static const uint16_t FCMajorVersion = 2;
-static const uint16_t FCMinorVersion = 3;
+static const uint16_t FCMajorVersion = 3;
+static const uint16_t FCMinorVersion = 0;
 
 
 typedef struct
@@ -67,10 +67,13 @@ typedef struct
 FCHeader;
 
 
-typedef NS_ENUM(uint32_t, FCType)
+typedef NS_ENUM(uint8_t, FCType)
 {
     FCTypeNull = 0,
-    FCTypeAlias,
+    FCTypeObjectAlias16,
+    FCTypeObjectAlias32,
+    FCTypeStringAlias16,
+    FCTypeStringAlias32,
     FCTypeString,
     FCTypeDictionary,
     FCTypeArray,
@@ -78,6 +81,8 @@ typedef NS_ENUM(uint32_t, FCType)
     FCTypeOrderedSet,
     FCTypeTrue,
     FCTypeFalse,
+    FCTypeInt8,
+    FCTypeInt16,
     FCTypeInt32,
     FCTypeInt64,
     FCTypeFloat32,
@@ -91,7 +96,8 @@ typedef NS_ENUM(uint32_t, FCType)
     FCTypeMutableOrderedSet,
     FCTypeMutableData,
     FCTypeClassDefinition,
-    FCTypeObject,
+    FCTypeObject16,
+    FCTypeObject32,
     FCTypeNil,
     FCTypeURL,
     FCTypePoint,
@@ -119,7 +125,18 @@ typedef NS_ENUM(uint32_t, FCType)
 
 #define FC_READ_VALUE(type, offset, input, total) type value; { \
 FC_ASSERT_FITS (sizeof(type), offset, total); \
-value = *(type *)(input + (offset)); offset += sizeof(value); }
+value = *(type *)(input + offset); \
+offset += sizeof(value); }
+
+
+#define FC_ALIGN_INPUT(type, offset) { \
+unsigned long align = offset % sizeof(type); \
+if (align) offset += sizeof(type) - align; }
+
+
+#define FC_ALIGN_OUTPUT(type, output) { \
+unsigned long align = [output length] % sizeof(type); \
+if (align) [output increaseLengthBy:sizeof(type) - align]; }
 
 
 #ifdef TARGET_OS_IPHONE
@@ -140,8 +157,9 @@ value = *(type *)(input + (offset)); offset += sizeof(value); }
 @public
     __unsafe_unretained id _rootObject;
     __unsafe_unretained NSMutableData *_output;
-    __unsafe_unretained id _cache;
-    __unsafe_unretained NSMutableDictionary *_classNames;
+    __unsafe_unretained NSMutableDictionary *_objectCache;
+    __unsafe_unretained NSMutableDictionary *_stringCache;
+    __unsafe_unretained NSMutableDictionary *_classesByName;
 }
 
 @end
@@ -159,7 +177,8 @@ value = *(type *)(input + (offset)); offset += sizeof(value); }
     NSUInteger *_offset;
     const void *_input;
     NSUInteger _total;
-    __unsafe_unretained id _cache;
+    __unsafe_unretained NSData *_objectCache;
+    __unsafe_unretained NSData *_stringCache;
     __unsafe_unretained NSMutableDictionary *_properties;
 }
 
@@ -189,57 +208,37 @@ value = *(type *)(input + (offset)); offset += sizeof(value); }
 @end
 
 
-static inline NSUInteger FCCacheReadObject(__unsafe_unretained id object, __unsafe_unretained id cache)
+static inline NSUInteger FCCacheReadObject(__unsafe_unretained id object, __unsafe_unretained NSData *cache)
 {
-    
-#ifdef DEBUG
-    
-    NSUInteger offset = [(NSArray *)cache count];
-    [cache addObject:object];
+    NSUInteger offset = (NSUInteger)CFDataGetLength((__bridge CFMutableDataRef)cache);
+    CFDataAppendBytes((__bridge CFMutableDataRef)cache, (void *)&object, sizeof(id));
     return offset;
-    
-#else
-    
-    if (cache)
-    {
-        NSUInteger offset = (NSUInteger)CFDataGetLength((__bridge CFMutableDataRef)cache);
-        CFDataAppendBytes((__bridge CFMutableDataRef)cache, (void *)&object, sizeof(id));
-        return offset;
-    }
-    return NSNotFound;
-    
-#endif
-    
 }
 
-static inline void FCReplaceCachedObject(NSUInteger index, __unsafe_unretained id object, __unsafe_unretained id cache)
+static inline void FCReplaceCachedObject(NSUInteger index, __unsafe_unretained id object, __unsafe_unretained NSData *cache)
 {
-    
-#ifdef DEBUG
-    
-    [cache replaceObjectAtIndex:index withObject:object];
-    
-#else
-    
-    if (cache) CFDataReplaceBytes((__bridge CFMutableDataRef)cache, CFRangeMake((CFIndex)index, sizeof(id)), (void *)&object, sizeof(id));
-    
-#endif
-    
+    CFDataReplaceBytes((__bridge CFMutableDataRef)cache, CFRangeMake((CFIndex)index, sizeof(id)), (void *)&object, sizeof(id));
 }
 
-static inline id FCCachedObjectAtIndex(NSUInteger index, __unsafe_unretained id cache)
+static inline id FCCachedObjectAtIndex(NSUInteger index, __unsafe_unretained NSData *cache)
 {
-    
-#ifdef DEBUG
-    
-    return cache[index];
-    
-#else
-    
-    return cache? ((__unsafe_unretained id *)(void *)CFDataGetBytePtr((__bridge CFMutableDataRef)cache))[index]: nil;
-    
-#endif
-    
+    return ((__unsafe_unretained id *)(void *)CFDataGetBytePtr((__bridge CFMutableDataRef)cache))[index];
+}
+
+
+static id FCReadObject(__unsafe_unretained FCNSDecoder *decoder);
+static id FCReadObject_2_3(__unsafe_unretained FCNSDecoder *decoder);
+
+static inline uint8_t FCReadType(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_READ_VALUE(uint8_t, *decoder->_offset, decoder->_input, decoder->_total);
+    return value;
+}
+
+static inline uint16_t FCReadRawUInt16(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_READ_VALUE(uint16_t, *decoder->_offset, decoder->_input, decoder->_total);
+    return value;
 }
 
 static inline uint32_t FCReadRawUInt32(__unsafe_unretained FCNSDecoder *decoder)
@@ -258,8 +257,7 @@ static id FCReadRawString(__unsafe_unretained FCNSDecoder *decoder)
 {
     __autoreleasing NSString *string = nil;
     NSUInteger length = strlen(decoder->_input + *decoder->_offset) + 1;
-    NSUInteger paddedLength = length + (4 - ((length % 4) ?: 4));
-    FC_ASSERT_FITS(paddedLength, *decoder->_offset, decoder->_total);
+    FC_ASSERT_FITS(length, *decoder->_offset, decoder->_total);
     if (length > 1)
     {
         string = CFBridgingRelease(CFStringCreateWithBytes(NULL, decoder->_input + *decoder->_offset,
@@ -269,27 +267,43 @@ static id FCReadRawString(__unsafe_unretained FCNSDecoder *decoder)
     {
         string = @"";
     }
-    *decoder->_offset += paddedLength;
+    *decoder->_offset += length;
     return string;
 }
-
-
-static id FCReadObject(__unsafe_unretained FCNSDecoder *decoder);
 
 static id FCReadNull(__unused __unsafe_unretained FCNSDecoder *decoder)
 {
     return [NSNull null];
 }
 
-static id FCReadAlias(__unsafe_unretained FCNSDecoder *decoder)
+static id FCReadAlias16(__unsafe_unretained FCNSDecoder *decoder)
 {
-    return FCCachedObjectAtIndex(FCReadRawUInt32(decoder), decoder->_cache);
+    FC_ALIGN_INPUT(uint16_t, *decoder->_offset);
+    return FCCachedObjectAtIndex(FCReadRawUInt16(decoder), decoder->_objectCache);
+}
+
+static id FCReadAlias32(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
+    return FCCachedObjectAtIndex(FCReadRawUInt32(decoder), decoder->_objectCache);
+}
+
+static id FCReadStringAlias16(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_ALIGN_INPUT(uint16_t, *decoder->_offset);
+    return FCCachedObjectAtIndex(FCReadRawUInt16(decoder), decoder->_stringCache);
+}
+
+static id FCReadStringAlias32(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
+    return FCCachedObjectAtIndex(FCReadRawUInt32(decoder), decoder->_stringCache);
 }
 
 static id FCReadString(__unsafe_unretained FCNSDecoder *decoder)
 {
     NSString *string = FCReadRawString(decoder);
-    FCCacheReadObject(string, decoder->_cache);
+    FCCacheReadObject(string, decoder->_stringCache);
     return string;
 }
 
@@ -297,8 +311,7 @@ static id FCReadMutableString(__unsafe_unretained FCNSDecoder *decoder)
 {
     __autoreleasing NSMutableString *string = nil;
     NSUInteger length = strlen(decoder->_input + *decoder->_offset) + 1;
-    NSUInteger paddedLength = length + (4 - ((length % 4) ?: 4));
-    FC_ASSERT_FITS(paddedLength, *decoder->_offset, decoder->_total);
+    FC_ASSERT_FITS(length, *decoder->_offset, decoder->_total);
     if (length > 1)
     {
         string = FC_AUTORELEASE([[NSMutableString alloc] initWithBytes:decoder->_input + *decoder->_offset length:length - 1 encoding:NSUTF8StringEncoding]);
@@ -307,13 +320,14 @@ static id FCReadMutableString(__unsafe_unretained FCNSDecoder *decoder)
     {
         string = [NSMutableString string];
     }
-    *decoder->_offset += paddedLength;
-    FCCacheReadObject(string, decoder->_cache);
+    *decoder->_offset += length;
+    FCCacheReadObject(string, decoder->_objectCache);
     return string;
 }
 
 static id FCReadDictionary(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t count = FCReadRawUInt32(decoder);
     __autoreleasing NSDictionary *dict = nil;
     if (count)
@@ -334,15 +348,16 @@ static id FCReadDictionary(__unsafe_unretained FCNSDecoder *decoder)
     {
         dict = @{};
     }
-    FCCacheReadObject(dict, decoder->_cache);
+    FCCacheReadObject(dict, decoder->_objectCache);
     return dict;
 }
 
 static id FCReadMutableDictionary(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t count = FCReadRawUInt32(decoder);
     __autoreleasing NSMutableDictionary *dict = CFBridgingRelease(CFDictionaryCreateMutable(NULL, (CFIndex)count, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
-    FCCacheReadObject(dict, decoder->_cache);
+    FCCacheReadObject(dict, decoder->_objectCache);
     for (uint32_t i = 0; i < count; i++)
     {
         __autoreleasing id value = FCReadObject(decoder);
@@ -354,6 +369,7 @@ static id FCReadMutableDictionary(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadArray(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t count = FCReadRawUInt32(decoder);
     __autoreleasing NSArray *array = nil;
     if (count)
@@ -370,15 +386,16 @@ static id FCReadArray(__unsafe_unretained FCNSDecoder *decoder)
     {
         array = @[];
     }
-    FCCacheReadObject(array, decoder->_cache);
+    FCCacheReadObject(array, decoder->_objectCache);
     return array;
 }
 
 static id FCReadMutableArray(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t count = FCReadRawUInt32(decoder);
     __autoreleasing NSMutableArray *array = [NSMutableArray arrayWithCapacity:count];
-    FCCacheReadObject(array, decoder->_cache);
+    FCCacheReadObject(array, decoder->_objectCache);
     for (uint32_t i = 0; i < count; i++)
     {
         CFArrayAppendValue((__bridge CFMutableArrayRef)array, (__bridge void *)FCReadObject(decoder));
@@ -388,6 +405,7 @@ static id FCReadMutableArray(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadSet(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t count = FCReadRawUInt32(decoder);
     __autoreleasing NSSet *set = nil;
     if (count)
@@ -404,15 +422,16 @@ static id FCReadSet(__unsafe_unretained FCNSDecoder *decoder)
     {
         set = [NSSet set];
     }
-    FCCacheReadObject(set, decoder->_cache);
+    FCCacheReadObject(set, decoder->_objectCache);
     return set;
 }
 
 static id FCReadMutableSet(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t count = FCReadRawUInt32(decoder);
     __autoreleasing NSMutableSet *set = [NSMutableSet setWithCapacity:count];
-    FCCacheReadObject(set, decoder->_cache);
+    FCCacheReadObject(set, decoder->_objectCache);
     for (uint32_t i = 0; i < count; i++)
     {
         [set addObject:FCReadObject(decoder)];
@@ -422,6 +441,7 @@ static id FCReadMutableSet(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadOrderedSet(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t count = FCReadRawUInt32(decoder);
     __autoreleasing NSOrderedSet *set = nil;
     if (count)
@@ -438,15 +458,16 @@ static id FCReadOrderedSet(__unsafe_unretained FCNSDecoder *decoder)
     {
         set = [NSOrderedSet orderedSet];
     }
-    FCCacheReadObject(set, decoder->_cache);
+    FCCacheReadObject(set, decoder->_objectCache);
     return set;
 }
 
 static id FCReadMutableOrderedSet(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t count = FCReadRawUInt32(decoder);
     __autoreleasing NSMutableOrderedSet *set = [NSMutableOrderedSet orderedSetWithCapacity:count];
-    FCCacheReadObject(set, decoder->_cache);
+    FCCacheReadObject(set, decoder->_objectCache);
     for (uint32_t i = 0; i < count; i++)
     {
         [set addObject:FCReadObject(decoder)];
@@ -464,73 +485,92 @@ static id FCReadFalse(__unused __unsafe_unretained FCNSDecoder *decoder)
     return @NO;
 }
 
+static id FCReadInt8(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_READ_VALUE(int8_t, *decoder->_offset, decoder->_input, decoder->_total);
+    __autoreleasing NSNumber *number = @(value);
+    return number;
+}
+
+static id FCReadInt16(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_ALIGN_INPUT(int16_t, *decoder->_offset);
+    FC_READ_VALUE(int16_t, *decoder->_offset, decoder->_input, decoder->_total);
+    __autoreleasing NSNumber *number = @(value);
+    return number;
+}
+
 static id FCReadInt32(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(int32_t, *decoder->_offset);
     FC_READ_VALUE(int32_t, *decoder->_offset, decoder->_input, decoder->_total);
     __autoreleasing NSNumber *number = @(value);
-    FCCacheReadObject(number, decoder->_cache);
     return number;
 }
 
 static id FCReadInt64(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(int64_t, *decoder->_offset);
     FC_READ_VALUE(int64_t, *decoder->_offset, decoder->_input, decoder->_total);
     __autoreleasing NSNumber *number = @(value);
-    FCCacheReadObject(number, decoder->_cache);
     return number;
 }
 
 static id FCReadFloat32(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_READ_VALUE(Float32, *decoder->_offset, decoder->_input, decoder->_total);
+    FC_ALIGN_INPUT(float_t, *decoder->_offset);
+    FC_READ_VALUE(float_t, *decoder->_offset, decoder->_input, decoder->_total);
     __autoreleasing NSNumber *number = @(value);
-    FCCacheReadObject(number, decoder->_cache);
     return number;
 }
 
 static id FCReadFloat64(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_READ_VALUE(Float64, *decoder->_offset, decoder->_input, decoder->_total);
+    FC_ALIGN_INPUT(double_t, *decoder->_offset);
+    FC_READ_VALUE(double_t, *decoder->_offset, decoder->_input, decoder->_total);
     __autoreleasing NSNumber *number = @(value);
-    FCCacheReadObject(number, decoder->_cache);
     return number;
 }
 
 static id FCReadData(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t length = FCReadRawUInt32(decoder);
     NSUInteger paddedLength = length + (4 - ((length % 4) ?: 4));
     FC_ASSERT_FITS(paddedLength, *decoder->_offset, decoder->_total);
     __autoreleasing NSData *data = [NSData dataWithBytes:(decoder->_input + *decoder->_offset) length:length];
     *decoder->_offset += paddedLength;
-    FCCacheReadObject(data, decoder->_cache);
+    FCCacheReadObject(data, decoder->_objectCache);
     return data;
 }
 
 static id FCReadMutableData(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t length = FCReadRawUInt32(decoder);
     NSUInteger paddedLength = length + (4 - ((length % 4) ?: 4));
     FC_ASSERT_FITS(paddedLength, *decoder->_offset, decoder->_total);
     __autoreleasing NSMutableData *data = [NSMutableData dataWithBytes:(decoder->_input + *decoder->_offset) length:length];
     *decoder->_offset += paddedLength;
-    FCCacheReadObject(data, decoder->_cache);
+    FCCacheReadObject(data, decoder->_objectCache);
     return data;
 }
 
 static id FCReadDate(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(NSTimeInterval, *decoder->_offset);
     FC_READ_VALUE(NSTimeInterval, *decoder->_offset, decoder->_input, decoder->_total);
     __autoreleasing NSDate *date = [NSDate dateWithTimeIntervalSince1970:value];
-    FCCacheReadObject(date, decoder->_cache);
+    FCCacheReadObject(date, decoder->_objectCache);
     return date;
 }
 
 static id FCReadClassDefinition(__unsafe_unretained FCNSDecoder *decoder)
 {
     __autoreleasing FCClassDefinition *definition = FC_AUTORELEASE([[FCClassDefinition alloc] init]);
-    FCCacheReadObject(definition, decoder->_cache);
+    FCCacheReadObject(definition, decoder->_objectCache);
     definition->_className = FCReadRawString(decoder);
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t count = FCReadRawUInt32(decoder);
     if (count)
     {
@@ -548,9 +588,9 @@ static id FCReadClassDefinition(__unsafe_unretained FCNSDecoder *decoder)
     return FCReadObject(decoder);
 }
 
-static id FCReadObjectInstance(__unsafe_unretained FCNSDecoder *decoder)
+static id FCReadObjectInstance(__unsafe_unretained FCNSDecoder *decoder, NSUInteger classIndex)
 {
-    __autoreleasing FCClassDefinition *definition = FCCachedObjectAtIndex(FCReadRawUInt32(decoder), decoder->_cache);
+    __autoreleasing FCClassDefinition *definition = FCCachedObjectAtIndex(classIndex, decoder->_objectCache);
     __autoreleasing Class objectClass = NSClassFromString(definition->_className);
     __autoreleasing id object = nil;
     if (objectClass)
@@ -565,7 +605,7 @@ static id FCReadObjectInstance(__unsafe_unretained FCNSDecoder *decoder)
     {
         object = [NSMutableDictionary dictionary];
     }
-    NSUInteger cacheIndex = FCCacheReadObject(object, decoder->_cache);
+    NSUInteger cacheIndex = FCCacheReadObject(object, decoder->_objectCache);
     for (__unsafe_unretained NSString *key in definition->_propertyKeys)
     {
         [object setValue:FCReadObject(decoder) forKey:key];
@@ -575,9 +615,21 @@ static id FCReadObjectInstance(__unsafe_unretained FCNSDecoder *decoder)
     {
         //TODO: this is only a partial solution, as any objects that referenced
         //this object between when it was created and now will have received incorrect instance
-        FCReplaceCachedObject(cacheIndex, newObject, decoder->_cache);
+        FCReplaceCachedObject(cacheIndex, newObject, decoder->_objectCache);
     }
     return newObject;
+}
+
+static id FCReadObject16(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_ALIGN_INPUT(uint16_t, *decoder->_offset);
+    return FCReadObjectInstance(decoder, FCReadRawUInt16(decoder));
+}
+
+static id FCReadObject32(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
+    return FCReadObjectInstance(decoder, FCReadRawUInt32(decoder));
 }
 
 static id FCReadNil(__unused __unsafe_unretained FCNSDecoder *decoder)
@@ -588,48 +640,53 @@ static id FCReadNil(__unused __unsafe_unretained FCNSDecoder *decoder)
 static id FCReadURL(__unsafe_unretained FCNSDecoder *decoder)
 {
     __autoreleasing NSURL *URL = [NSURL URLWithString:FCReadObject(decoder) relativeToURL:FCReadObject(decoder)];
-    FCCacheReadObject(URL, decoder->_cache);
+    FCCacheReadObject(URL, decoder->_stringCache);
     return URL;
 }
 
 static id FCReadPoint(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(double_t, *decoder->_offset);
     CGPoint point = {(CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder)};
     NSValue *value = [NSValue valueWithBytes:&point objCType:@encode(CGPoint)];
-    FCCacheReadObject(value, decoder->_cache);
+    FCCacheReadObject(value, decoder->_objectCache);
     return value;
 }
 
 static id FCReadSize(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(double_t, *decoder->_offset);
     CGSize size = {(CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder)};
     NSValue *value = [NSValue valueWithBytes:&size objCType:@encode(CGSize)];
-    FCCacheReadObject(value, decoder->_cache);
+    FCCacheReadObject(value, decoder->_objectCache);
     return value;
 }
 
 static id FCReadRect(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(double_t, *decoder->_offset);
     CGRect rect =
     {
         {(CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder)},
         {(CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder)}
     };
     NSValue *value = [NSValue valueWithBytes:&rect objCType:@encode(CGRect)];
-    FCCacheReadObject(value, decoder->_cache);
+    FCCacheReadObject(value, decoder->_objectCache);
     return value;
 }
 
 static id FCReadRange(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     NSRange range = {FCReadRawUInt32(decoder), FCReadRawUInt32(decoder)};
     NSValue *value = [NSValue valueWithBytes:&range objCType:@encode(NSRange)];
-    FCCacheReadObject(value, decoder->_cache);
+    FCCacheReadObject(value, decoder->_objectCache);
     return value;
 }
 
 static id FCReadAffineTransform(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(double_t, *decoder->_offset);
     CGAffineTransform transform =
     {
         (CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder),
@@ -637,12 +694,13 @@ static id FCReadAffineTransform(__unsafe_unretained FCNSDecoder *decoder)
         (CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder)
     };
     NSValue *value = [NSValue valueWithBytes:&transform objCType:@encode(CGAffineTransform)];
-    FCCacheReadObject(value, decoder->_cache);
+    FCCacheReadObject(value, decoder->_objectCache);
     return value;
 }
 
 static id FCRead3DTransform(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(double_t, *decoder->_offset);
     CGFloat transform[] =
     {
         (CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder),
@@ -655,15 +713,16 @@ static id FCRead3DTransform(__unsafe_unretained FCNSDecoder *decoder)
         (CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder)
     };
     NSValue *value = [NSValue valueWithBytes:&transform objCType:@encode(CGFloat[16])];
-    FCCacheReadObject(value, decoder->_cache);
+    FCCacheReadObject(value, decoder->_objectCache);
     return value;
 }
 
 static id FCReadMutableIndexSet(__unsafe_unretained FCNSDecoder *decoder)
 {
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t rangeCount = FCReadRawUInt32(decoder);
     __autoreleasing NSMutableIndexSet *indexSet = [NSMutableIndexSet indexSet];
-    FCCacheReadObject(indexSet, decoder->_cache);
+    FCCacheReadObject(indexSet, decoder->_objectCache);
     for (uint32_t i = 0; i < rangeCount; i++)
     {
         NSRange range = {FCReadRawUInt32(decoder), FCReadRawUInt32(decoder)};
@@ -674,8 +733,9 @@ static id FCReadMutableIndexSet(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadIndexSet(__unsafe_unretained FCNSDecoder *decoder)
 {
-    __autoreleasing NSIndexSet *indexSet;
+    FC_ALIGN_INPUT(uint32_t, *decoder->_offset);
     uint32_t rangeCount = FCReadRawUInt32(decoder);
+    __autoreleasing NSIndexSet *indexSet;
     if (rangeCount == 1)
     {
         //common case optimisation
@@ -693,7 +753,7 @@ static id FCReadIndexSet(__unsafe_unretained FCNSDecoder *decoder)
         indexSet = [indexSet copy];
         
     }
-    FCCacheReadObject(indexSet, decoder->_cache);
+    FCCacheReadObject(indexSet, decoder->_objectCache);
     return indexSet;
 }
 
@@ -701,7 +761,7 @@ static id FCReadNSCodedObject(__unsafe_unretained FCNSDecoder *decoder)
 {
     NSString *className = FCReadObject(decoder);
     NSMutableDictionary *oldProperties = decoder->_properties;
-    decoder->_properties = [NSMutableDictionary dictionary];
+    decoder->_properties = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
     while (true)
     {
         id object = FCReadObject(decoder);
@@ -711,7 +771,7 @@ static id FCReadNSCodedObject(__unsafe_unretained FCNSDecoder *decoder)
     }
     id object = [[NSClassFromString(className) alloc] initWithCoder:decoder];
     decoder->_properties = oldProperties;
-    FCCacheReadObject(object, decoder->_cache);
+    FCCacheReadObject(object, decoder->_objectCache);
     return object;
 }
 
@@ -720,7 +780,10 @@ static id FCReadObject(__unsafe_unretained FCNSDecoder *decoder)
     static id (*constructors[])(FCNSDecoder *) =
     {
         FCReadNull,
-        FCReadAlias,
+        FCReadAlias16,
+        FCReadAlias32,
+        FCReadStringAlias16,
+        FCReadStringAlias32,
         FCReadString,
         FCReadDictionary,
         FCReadArray,
@@ -728,6 +791,8 @@ static id FCReadObject(__unsafe_unretained FCNSDecoder *decoder)
         FCReadOrderedSet,
         FCReadTrue,
         FCReadFalse,
+        FCReadInt8,
+        FCReadInt16,
         FCReadInt32,
         FCReadInt64,
         FCReadFloat32,
@@ -741,7 +806,8 @@ static id FCReadObject(__unsafe_unretained FCNSDecoder *decoder)
         FCReadMutableOrderedSet,
         FCReadMutableData,
         FCReadClassDefinition,
-        FCReadObjectInstance,
+        FCReadObject16,
+        FCReadObject32,
         FCReadNil,
         FCReadURL,
         FCReadPoint,
@@ -755,8 +821,8 @@ static id FCReadObject(__unsafe_unretained FCNSDecoder *decoder)
         FCReadNSCodedObject
     };
     
-    FCType type = FCReadRawUInt32(decoder);
-    if ((uint32_t)type > sizeof(constructors) / sizeof(id))
+    FCType type = FCReadType(decoder);
+    if (type > sizeof(constructors) / sizeof(id))
     {
         [NSException raise:FastCodingException format:@"FastCoding cannot decode object of type: %i", type];
         return nil;
@@ -764,14 +830,14 @@ static id FCReadObject(__unsafe_unretained FCNSDecoder *decoder)
     return ((id (*)(FCNSDecoder *))constructors[type])(decoder);
 }
 
-static inline NSUInteger FCCacheWrittenObject(__unsafe_unretained id object, __unsafe_unretained id cache)
+static inline NSUInteger FCCacheWrittenObject(__unsafe_unretained id object, __unsafe_unretained NSMutableDictionary *cache)
 {
     NSUInteger count = (NSUInteger)CFDictionaryGetCount((CFMutableDictionaryRef)cache);
     CFDictionarySetValue((CFMutableDictionaryRef)cache, (__bridge const void *)(object), (const void *)(count + 1));
     return count;
 }
 
-static inline NSUInteger FCIndexOfCachedObject(__unsafe_unretained id object, __unsafe_unretained id cache)
+static inline NSUInteger FCIndexOfCachedObject(__unsafe_unretained id object, __unsafe_unretained NSMutableDictionary *cache)
 {
     const void *index = CFDictionaryGetValue((__bridge CFMutableDictionaryRef)cache, (__bridge const void *)object);
     if (index)
@@ -779,6 +845,16 @@ static inline NSUInteger FCIndexOfCachedObject(__unsafe_unretained id object, __
         return ((NSUInteger)index) - 1;
     }
     return NSNotFound;
+}
+
+static inline void FCWriteType(FCType value, __unsafe_unretained NSMutableData *output)
+{
+    [output appendBytes:&value length:sizeof(value)];
+}
+
+static inline void FCWriteUInt16(uint16_t value, __unsafe_unretained NSMutableData *output)
+{
+    [output appendBytes:&value length:sizeof(value)];
 }
 
 static inline void FCWriteUInt32(uint32_t value, __unsafe_unretained NSMutableData *output)
@@ -796,52 +872,87 @@ static inline void FCWriteString(__unsafe_unretained NSString *string, __unsafe_
     const char *utf8 = [string UTF8String];
     NSUInteger length = strlen(utf8) + 1;
     [output appendBytes:utf8 length:length];
-    output.length += (4 - ((length % 4) ?: 4));
+}
+
+static inline BOOL FCWriteObjectAlias(__unsafe_unretained id object, __unsafe_unretained FCNSCoder *coder)
+{
+    NSUInteger index = FCIndexOfCachedObject(object, coder->_objectCache);
+    if (index < 65536)
+    {
+        FCWriteType(FCTypeObjectAlias16, coder->_output);
+        FC_ALIGN_OUTPUT(uint16_t, coder->_output);
+        FCWriteUInt16((uint16_t)index, coder->_output);
+        return YES;
+    }
+    else if (index != NSNotFound)
+    {
+        FCWriteType(FCTypeObjectAlias32, coder->_output);
+        FC_ALIGN_OUTPUT(uint32_t, coder->_output);
+        FCWriteUInt32((uint32_t)index, coder->_output);
+        return YES;
+    }
+    else
+    {
+        return NO;
+    }
+}
+
+static inline BOOL FCWriteStringAlias(__unsafe_unretained id object, __unsafe_unretained FCNSCoder *coder)
+{
+    NSUInteger index = FCIndexOfCachedObject(object, coder->_stringCache);
+    if (index < 65536)
+    {
+        FCWriteType(FCTypeStringAlias16, coder->_output);
+        FC_ALIGN_OUTPUT(uint16_t, coder->_output);
+        FCWriteUInt16((uint16_t)index, coder->_output);
+        return YES;
+    }
+    else if (index != NSNotFound)
+    {
+        FCWriteType(FCTypeStringAlias32, coder->_output);
+        FC_ALIGN_OUTPUT(uint32_t, coder->_output);
+        FCWriteUInt32((uint32_t)index, coder->_output);
+        return YES;
+    }
+    else
+    {
+        return NO;
+    }
 }
 
 static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCNSCoder *coder)
 {
     if (object)
     {
-        //check cache
-        NSUInteger index = FCIndexOfCachedObject(object, coder->_cache);
-        if (index != NSNotFound)
-        {
-            FCWriteUInt32(FCTypeAlias, coder->_output);
-            FCWriteUInt32((uint32_t)index, coder->_output);
-        }
-        else
-        {
-            [object FC_encodeWithCoder:coder];
-        }
+        [object FC_encodeWithCoder:coder];
     }
     else
     {
-        FCWriteUInt32(FCTypeNil, coder->_output);
+        FCWriteType(FCTypeNil, coder->_output);
     }
 }
 
-const void *FCRetainCallback(__unused CFAllocatorRef allocator, const void* value)
+const void *FCRetainCallback(__unused CFAllocatorRef allocator, const void *value)
 {
     return value;
 }
 
-void FCReleaseCallback(__unused CFAllocatorRef allocator, __unused const void* value)
+void FCReleaseCallback(__unused CFAllocatorRef allocator, __unused const void *value)
 {
     //does nothing
 }
 
-CFStringRef FCCopyDescriptionCallback(__unused const void* value)
+CFStringRef FCCopyDescriptionCallback(__unused const void *value)
 {
     return nil;
 }
 
-Boolean FCDictionaryEqualCallback(const void* value1, const void* value2)
+Boolean FCDictionaryEqualCallback(const void *value1, const void *value2)
 {
     return value1 == value2;
 }
 
-CFHashCode FCDictionaryHashCallback(const void* value)
+CFHashCode FCDictionaryHashCallback(const void *value)
 {
     return (CFHashCode)value;
 }
@@ -867,7 +978,7 @@ CFHashCode FCDictionaryHashCallback(const void* value)
         //not a FastArchive
         return nil;
     }
-    if (header.majorVersion != FCMajorVersion)
+    if (header.majorVersion < 2 || header.majorVersion > FCMajorVersion)
     {
         //not compatible
         NSLog(@"This version of the FastCoding library doesn't support FastCoding version %i.%i files", header.majorVersion, header.minorVersion);
@@ -882,21 +993,18 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     decoder->_total = length;
     
     //read data
-    uint32_t objectCount = FCReadRawUInt32(decoder);
-    ;
-    
-#ifdef DEBUG
-    
-    __autoreleasing NSMutableArray *cache = [NSMutableArray arrayWithCapacity:objectCount * sizeof(id)];
-
-#else
-    
-    __autoreleasing NSMutableData *cache = [NSMutableData dataWithCapacity:objectCount * sizeof(id)];
-    
-#endif
-    
-    decoder->_cache = cache;
-    return FCReadObject(decoder);
+    __autoreleasing NSMutableData *objectCache = [NSMutableData dataWithCapacity:FCReadRawUInt32(decoder) * sizeof(id)];
+    decoder->_objectCache = objectCache;
+    if (header.majorVersion < 3)
+    {
+        return FCReadObject_2_3(decoder);
+    }
+    else
+    {
+        __autoreleasing NSMutableData *stringCache = [NSMutableData dataWithCapacity:FCReadRawUInt32(decoder) * sizeof(id)];
+        decoder->_stringCache = stringCache;
+        return FCReadObject(decoder);
+    }
 }
 
 + (NSData *)dataWithRootObject:(id)object
@@ -908,11 +1016,12 @@ CFHashCode FCDictionaryHashCallback(const void* value)
         NSMutableData *output = [NSMutableData dataWithLength:sizeof(header)];
         memcpy(output.mutableBytes, &header, sizeof(header));
         
-        //object count placeholder
+        //object count placeholders
+        FCWriteUInt32(0, output);
         FCWriteUInt32(0, output);
         
         //set up cache
-        const CFDictionaryKeyCallBacks keyCallbacks =
+        const CFDictionaryKeyCallBacks ocKeyCallbacks =
         {
             0,
             FCRetainCallback,
@@ -920,6 +1029,16 @@ CFHashCode FCDictionaryHashCallback(const void* value)
             FCCopyDescriptionCallback,
             FCDictionaryEqualCallback,
             FCDictionaryHashCallback
+        };
+        
+        const CFDictionaryKeyCallBacks scKeyCallbacks =
+        {
+            0,
+            FCRetainCallback,
+            FCReleaseCallback,
+            FCCopyDescriptionCallback,
+            NULL,
+            NULL
         };
         
         const CFDictionaryValueCallBacks valueCallbacks =
@@ -934,19 +1053,27 @@ CFHashCode FCDictionaryHashCallback(const void* value)
         @autoreleasepool
         {
             //create coder
-            NSMutableDictionary *cache = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &keyCallbacks, &valueCallbacks));
+            __autoreleasing id objectCache = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &ocKeyCallbacks, &valueCallbacks));
+            __autoreleasing id stringCache = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &scKeyCallbacks, &valueCallbacks));
+            __autoreleasing id classesByName = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &scKeyCallbacks, &valueCallbacks));
             FCNSCoder *coder = FC_AUTORELEASE([[FCNSCoder alloc] init]);
             coder->_rootObject = object;
             coder->_output = output;
-            coder->_cache = cache;
-            coder->_classNames = [NSMutableDictionary dictionary];
+            coder->_objectCache = objectCache;
+            coder->_stringCache = stringCache;
+            coder->_classesByName = classesByName;
             
             //write object
             FCWriteObject(object, coder);
             
-            //set object count and return
-            uint32_t objectCount = (uint32_t)[cache count];
+            //set object count
+            uint32_t objectCount = (uint32_t)[objectCache count];
             [output replaceBytesInRange:NSMakeRange(sizeof(header), sizeof(uint32_t)) withBytes:&objectCount];
+            
+            //set string count
+            uint32_t stringCount = (uint32_t)[stringCache count];
+            [output replaceBytesInRange:NSMakeRange(sizeof(header) + sizeof(uint32_t), sizeof(uint32_t)) withBytes:&stringCount];
+            
             return output;
         }
     }
@@ -971,7 +1098,7 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)encodeConditionalObject:(id)objv forKey:(__unsafe_unretained NSString *)key
 {
-    if (FCIndexOfCachedObject(objv, _cache) != NSNotFound)
+    if (FCIndexOfCachedObject(objv, _objectCache) != NSNotFound)
     {
         FCWriteObject(objv, self);
         FCWriteObject(key, self);
@@ -1161,27 +1288,30 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
+    if (FCWriteObjectAlias(self, coder)) return;
+    
     //handle NSCoding
     if (![self preferFastCoding] && [self conformsToProtocol:@protocol(NSCoding)])
     {
         //write object
-        FCWriteUInt32(FCTypeNSCodedObject, coder->_output);
+        FCWriteType(FCTypeNSCodedObject, coder->_output);
         FCWriteObject(NSStringFromClass([self classForCoder]), coder);
         [(id <NSCoding>)self encodeWithCoder:coder];
-        FCWriteUInt32(FCTypeNil, coder->_output);
-        FCCacheWrittenObject(self, coder->_cache);
+        FCWriteType(FCTypeNil, coder->_output);
+        FCCacheWrittenObject(self, coder->_objectCache);
         return;
     }
     
     //write class definition
     Class objectClass = [self classForFastCoding];
-    NSUInteger classIndex = FCIndexOfCachedObject(objectClass, coder->_cache);
+    NSUInteger classIndex = FCIndexOfCachedObject(objectClass, coder->_objectCache);
     __autoreleasing NSArray *propertyKeys = [objectClass FC_aggregatePropertyKeys];
     if (classIndex == NSNotFound)
     {
-        classIndex = FCCacheWrittenObject(objectClass, coder->_cache);
-        FCWriteUInt32(FCTypeClassDefinition, coder->_output);
+        classIndex = FCCacheWrittenObject(objectClass, coder->_objectCache);
+        FCWriteType(FCTypeClassDefinition, coder->_output);
         FCWriteString(NSStringFromClass(objectClass), coder->_output);
+        FC_ALIGN_OUTPUT(uint32_t, coder->_output);
         FCWriteUInt32((uint32_t)[propertyKeys count], coder->_output);
         for (__unsafe_unretained id value in propertyKeys)
         {
@@ -1190,9 +1320,19 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     }
 
     //write object
-    FCCacheWrittenObject(self, coder->_cache);
-    FCWriteUInt32(FCTypeObject, coder->_output);
-    FCWriteUInt32((uint32_t)classIndex, coder->_output);
+    FCCacheWrittenObject(self, coder->_objectCache);
+    if (classIndex < 65536)
+    {
+        FCWriteType(FCTypeObject16, coder->_output);
+        FC_ALIGN_OUTPUT(uint16_t, coder->_output);
+        FCWriteUInt16((uint16_t)classIndex, coder->_output);
+    }
+    else
+    {
+        FCWriteType(FCTypeObject32, coder->_output);
+        FC_ALIGN_OUTPUT(uint32_t, coder->_output);
+        FCWriteUInt32((uint32_t)classIndex, coder->_output);
+    }
     for (__unsafe_unretained NSString *key in propertyKeys)
     {
         FCWriteObject([self valueForKey:key], coder);
@@ -1206,8 +1346,18 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
-    FCCacheWrittenObject(self, coder->_cache);
-    FCWriteUInt32(([self classForCoder] == [NSMutableString class])? FCTypeMutableString: FCTypeString, coder->_output);
+    if ([self classForCoder] == [NSMutableString class])
+    {
+        if (FCWriteObjectAlias(self, coder)) return;
+        FCCacheWrittenObject(self, coder->_objectCache);
+        FCWriteType(FCTypeMutableString, coder->_output);
+    }
+    else
+    {
+        if (FCWriteStringAlias(self, coder)) return;
+        FCCacheWrittenObject(self, coder->_stringCache);
+        FCWriteType(FCTypeString, coder->_output);
+    }
     FCWriteString(self, coder->_output);
 }
 
@@ -1220,15 +1370,14 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 {
     if (self == (void *)kCFBooleanFalse)
     {
-        FCWriteUInt32(FCTypeFalse, coder->_output);
+        FCWriteType(FCTypeFalse, coder->_output);
     }
     else if (self == (void *)kCFBooleanTrue)
     {
-        FCWriteUInt32(FCTypeTrue, coder->_output);
+        FCWriteType(FCTypeTrue, coder->_output);
     }
     else
     {
-        FCCacheWrittenObject(self, coder->_cache);
         CFNumberType subtype = CFNumberGetType((CFNumberRef)self);
         switch (subtype)
         {
@@ -1239,31 +1388,47 @@ CFHashCode FCDictionaryHashCallback(const void* value)
                 int64_t value = [self longLongValue];
                 if (value > (int64_t)INT32_MAX || value < (int64_t)INT32_MIN)
                 {
-                    FCWriteUInt32(FCTypeInt64, coder->_output);
+                    FCWriteType(FCTypeInt64, coder->_output);
+                    FC_ALIGN_OUTPUT(int64_t, coder->_output);
                     [coder->_output appendBytes:&value length:sizeof(value)];
                     break;
                 }
                 //otherwise treat as 32-bit
             }
             case kCFNumberSInt8Type:
-            case kCFNumberSInt16Type:
-            case kCFNumberSInt32Type:
             case kCFNumberCharType:
+            {
+                FCWriteType(FCTypeInt8, coder->_output);
+                int8_t value = (int8_t)[self intValue];
+                [coder->_output appendBytes:&value length:sizeof(value)];
+                break;
+            }
+            case kCFNumberSInt16Type:
             case kCFNumberShortType:
+            {
+                FCWriteType(FCTypeInt16, coder->_output);
+                int16_t value = (int16_t)[self intValue];
+                FC_ALIGN_OUTPUT(int16_t, coder->_output);
+                [coder->_output appendBytes:&value length:sizeof(value)];
+                break;
+            }
+            case kCFNumberSInt32Type:
             case kCFNumberIntType:
             case kCFNumberLongType:
             case kCFNumberCFIndexType:
             {
-                FCWriteUInt32(FCTypeInt32, coder->_output);
+                FCWriteType(FCTypeInt32, coder->_output);
                 int32_t value = (int32_t)[self intValue];
+                FC_ALIGN_OUTPUT(int32_t, coder->_output);
                 [coder->_output appendBytes:&value length:sizeof(value)];
                 break;
             }
             case kCFNumberFloat32Type:
             case kCFNumberFloatType:
             {
-                FCWriteUInt32(FCTypeFloat32, coder->_output);
-                Float32 value = [self floatValue];
+                FCWriteType(FCTypeFloat32, coder->_output);
+                float_t value = [self floatValue];
+                FC_ALIGN_OUTPUT(float_t, coder->_output);
                 [coder->_output appendBytes:&value length:sizeof(value)];
                 break;
             }
@@ -1271,8 +1436,9 @@ CFHashCode FCDictionaryHashCallback(const void* value)
             case kCFNumberDoubleType:
             case kCFNumberCGFloatType:
             {
-                FCWriteUInt32(FCTypeFloat64, coder->_output);
-                Float64 value = [self floatValue];
+                FCWriteType(FCTypeFloat64, coder->_output);
+                double_t value = [self floatValue];
+                FC_ALIGN_OUTPUT(double_t, coder->_output);
                 [coder->_output appendBytes:&value length:sizeof(value)];
                 break;
             }
@@ -1287,8 +1453,9 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
-    FCCacheWrittenObject(self, coder->_cache);
-    FCWriteUInt32(FCTypeDate, coder->_output);
+    if (FCWriteObjectAlias(self, coder)) return;
+    FCCacheWrittenObject(self, coder->_objectCache);
+    FCWriteType(FCTypeDate, coder->_output);
     NSTimeInterval value = [self timeIntervalSince1970];
     [coder->_output appendBytes:&value length:sizeof(value)];
 }
@@ -1300,9 +1467,11 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
-    FCCacheWrittenObject(self, coder->_cache);
-    FCWriteUInt32(([self classForCoder] == [NSMutableData class])? FCTypeMutableData: FCTypeData, coder->_output);
+    if (FCWriteObjectAlias(self, coder)) return;
+    FCCacheWrittenObject(self, coder->_objectCache);
+    FCWriteType(([self classForCoder] == [NSMutableData class])? FCTypeMutableData: FCTypeData, coder->_output);
     uint32_t length = (uint32_t)[self length];
+    FC_ALIGN_OUTPUT(uint32_t, coder->_output);
     FCWriteUInt32(length, coder->_output);
     [coder->_output appendData:self];
     coder->_output.length += (4 - ((length % 4) ?: 4));
@@ -1315,7 +1484,7 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
-    FCWriteUInt32(FCTypeNull, coder->_output);
+    FCWriteType(FCTypeNull, coder->_output);
 }
 
 @end
@@ -1325,6 +1494,8 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
+    if (FCWriteObjectAlias(self, coder)) return;
+    
     //alias keypath
     __autoreleasing NSString *aliasKeypath = self[@"$alias"];
     if ([self count] == 1 && aliasKeypath)
@@ -1352,7 +1523,7 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     {
         //get class definition
         __autoreleasing NSArray *propertyKeys = [[self allKeys] filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"self != '$class'"]];
-        __autoreleasing FCClassDefinition *objectClass = coder->_classNames[className];
+        __autoreleasing FCClassDefinition *objectClass = coder->_classesByName[className];
         if (objectClass)
         {
             //check that existing class definition contains all keys
@@ -1379,16 +1550,17 @@ CFHashCode FCDictionaryHashCallback(const void* value)
             objectClass = FC_AUTORELEASE([[FCClassDefinition alloc] init]);
             objectClass->_className = className;
             objectClass->_propertyKeys = propertyKeys;
-            coder->_classNames[className] = objectClass;
+            coder->_classesByName[className] = objectClass;
         }
         
         //write class definition
-        NSUInteger classIndex = FCIndexOfCachedObject(objectClass, coder->_cache);
+        NSUInteger classIndex = FCIndexOfCachedObject(objectClass, coder->_objectCache);
         if (classIndex == NSNotFound)
         {
-            classIndex = FCCacheWrittenObject(objectClass, coder->_cache);
-            FCWriteUInt32(FCTypeClassDefinition, coder->_output);
+            classIndex = FCCacheWrittenObject(objectClass, coder->_objectCache);
+            FCWriteType(FCTypeClassDefinition, coder->_output);
             FCWriteString(objectClass->_className, coder->_output);
+            FC_ALIGN_OUTPUT(uint32_t, coder->_output);
             FCWriteUInt32((uint32_t)[propertyKeys count], coder->_output);
             for (__unsafe_unretained id key in propertyKeys)
             {
@@ -1398,9 +1570,19 @@ CFHashCode FCDictionaryHashCallback(const void* value)
         }
         
         //write object
-        FCCacheWrittenObject(self, coder->_cache);
-        FCWriteUInt32(FCTypeObject, coder->_output);
-        FCWriteUInt32((uint32_t)classIndex, coder->_output);
+        FCCacheWrittenObject(self, coder->_objectCache);
+        if (classIndex < 65536)
+        {
+            FCWriteType(FCTypeObject16, coder->_output);
+            FC_ALIGN_OUTPUT(uint16_t, coder->_output);
+            FCWriteUInt16((uint16_t)classIndex, coder->_output);
+        }
+        else
+        {
+            FCWriteType(FCTypeObject32, coder->_output);
+            FC_ALIGN_OUTPUT(uint32_t, coder->_output);
+            FCWriteUInt32((uint32_t)classIndex, coder->_output);
+        }
         for (__unsafe_unretained NSString *key in propertyKeys)
         {
             FCWriteObject(self[key], coder);
@@ -1410,14 +1592,15 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     
     //ordinary dictionary
     BOOL mutable = ([self classForCoder] == [NSMutableDictionary class]);
-    if (mutable) FCCacheWrittenObject(self, coder->_cache);
-    FCWriteUInt32(mutable? FCTypeMutableDictionary: FCTypeDictionary, coder->_output);
+    if (mutable) FCCacheWrittenObject(self, coder->_objectCache);
+    FCWriteType(mutable? FCTypeMutableDictionary: FCTypeDictionary, coder->_output);
+    FC_ALIGN_OUTPUT(uint32_t, coder->_output);
     FCWriteUInt32((uint32_t)[self count], coder->_output);
     [self enumerateKeysAndObjectsUsingBlock:^(__unsafe_unretained id key, __unsafe_unretained id obj, __unused BOOL *stop) {
         FCWriteObject(obj, coder);
         FCWriteObject(key, coder);
     }];
-    if (!mutable) FCCacheWrittenObject(self, coder->_cache);
+    if (!mutable) FCCacheWrittenObject(self, coder->_objectCache);
 }
 
 @end
@@ -1427,15 +1610,17 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
+    if (FCWriteObjectAlias(self, coder)) return;
     BOOL mutable = ([self classForCoder] == [NSMutableArray class]);
-    if (mutable) FCCacheWrittenObject(self, coder->_cache);
-    FCWriteUInt32(mutable? FCTypeMutableArray: FCTypeArray, coder->_output);
+    if (mutable) FCCacheWrittenObject(self, coder->_objectCache);
+    FCWriteType(mutable? FCTypeMutableArray: FCTypeArray, coder->_output);
+    FC_ALIGN_OUTPUT(uint32_t, coder->_output);
     FCWriteUInt32((uint32_t)[self count], coder->_output);
     for (__unsafe_unretained id value in self)
     {
         FCWriteObject(value, coder);
     }
-    if (!mutable) FCCacheWrittenObject(self, coder->_cache);
+    if (!mutable) FCCacheWrittenObject(self, coder->_objectCache);
 }
 
 @end
@@ -1446,15 +1631,17 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
+    if (FCWriteObjectAlias(self, coder)) return;
     BOOL mutable = ([self classForCoder] == [NSMutableSet class]);
-    if (mutable) FCCacheWrittenObject(self, coder->_cache);
-    FCWriteUInt32(mutable? FCTypeMutableSet: FCTypeSet, coder->_output);
+    if (mutable) FCCacheWrittenObject(self, coder->_objectCache);
+    FCWriteType(mutable? FCTypeMutableSet: FCTypeSet, coder->_output);
+    FC_ALIGN_OUTPUT(uint32_t, coder->_output);
     FCWriteUInt32((uint32_t)[self count], coder->_output);
     for (__unsafe_unretained id value in self)
     {
         FCWriteObject(value, coder);
     }
-    if (!mutable) FCCacheWrittenObject(self, coder->_cache);
+    if (!mutable) FCCacheWrittenObject(self, coder->_objectCache);
 }
 
 @end
@@ -1464,15 +1651,17 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
+    if (FCWriteObjectAlias(self, coder)) return;
     BOOL mutable = ([self classForCoder] == [NSMutableOrderedSet class]);
-    if (mutable) FCCacheWrittenObject(self, coder->_cache);
-    FCWriteUInt32(mutable? FCTypeMutableOrderedSet: FCTypeOrderedSet, coder->_output);
+    if (mutable) FCCacheWrittenObject(self, coder->_objectCache);
+    FCWriteType(mutable? FCTypeMutableOrderedSet: FCTypeOrderedSet, coder->_output);
+    FC_ALIGN_OUTPUT(uint32_t, coder->_output);
     FCWriteUInt32((uint32_t)[self count], coder->_output);
     for (__unsafe_unretained id value in self)
     {
         FCWriteObject(value, coder);
     }
-    if (!mutable) FCCacheWrittenObject(self, coder->_cache);
+    if (!mutable) FCCacheWrittenObject(self, coder->_objectCache);
 }
 
 @end
@@ -1482,22 +1671,25 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
+    if (FCWriteObjectAlias(self, coder)) return;
+    
     BOOL mutable = ([self classForCoder] == [NSMutableIndexSet class]);
-    if (mutable) FCCacheWrittenObject(self, coder->_cache);
+    if (mutable) FCCacheWrittenObject(self, coder->_objectCache);
     
     uint32_t __block rangeCount = 0; // wish we could get this directly from NSIndexSet...
     [self enumerateRangesUsingBlock:^(__unused NSRange range, __unused BOOL *stop) {
         rangeCount ++;
     }];
 
-    FCWriteUInt32(mutable? FCTypeMutableIndexSet: FCTypeIndexSet, coder->_output);
+    FCWriteType(mutable? FCTypeMutableIndexSet: FCTypeIndexSet, coder->_output);
+    FC_ALIGN_OUTPUT(uint32_t, coder->_output);
     FCWriteUInt32(rangeCount, coder->_output);
     [self enumerateRangesUsingBlock:^(NSRange range, __unused BOOL *stop) {
         FCWriteUInt32((uint32_t)range.location, coder->_output);
         FCWriteUInt32((uint32_t)range.length, coder->_output);
     }];
     
-    if (!mutable) FCCacheWrittenObject(self, coder->_cache);
+    if (!mutable) FCCacheWrittenObject(self, coder->_objectCache);
 }
 
 @end
@@ -1507,10 +1699,11 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
-    FCWriteUInt32(FCTypeURL, coder->_output);
+    if (FCWriteStringAlias(self, coder)) return;
+    FCWriteType(FCTypeURL, coder->_output);
     FCWriteObject(self.relativeString, coder);
     FCWriteObject(self.baseURL, coder);
-    FCCacheWrittenObject(self, coder->_cache);
+    FCCacheWrittenObject(self, coder->_stringCache);
 }
 
 @end
@@ -1520,13 +1713,16 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
-    FCCacheWrittenObject(self, coder->_cache);
+    if (FCWriteObjectAlias(self, coder)) return;
+    
+    FCCacheWrittenObject(self, coder->_objectCache);
     const char *type = [self objCType];
     if (strcmp(type, @encode(CGPoint)) == 0 OR_IF_MAC(strcmp(type, @encode(NSPoint)) == 0))
     {
         CGFloat point[2];
         [self getValue:&point];
-        FCWriteUInt32(FCTypePoint, coder->_output);
+        FCWriteType(FCTypePoint, coder->_output);
+        FC_ALIGN_OUTPUT(double_t, coder->_output);
         FCWriteDouble((double_t)point[0], coder->_output);
         FCWriteDouble((double_t)point[1], coder->_output);
     }
@@ -1534,7 +1730,8 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     {
         CGFloat size[2];
         [self getValue:&size];
-        FCWriteUInt32(FCTypeSize, coder->_output);
+        FCWriteType(FCTypeSize, coder->_output);
+        FC_ALIGN_OUTPUT(double_t, coder->_output);
         FCWriteDouble((double_t)size[0], coder->_output);
         FCWriteDouble((double_t)size[1], coder->_output);
     }
@@ -1542,7 +1739,8 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     {
         CGFloat rect[4];
         [self getValue:&rect];
-        FCWriteUInt32(FCTypeRect, coder->_output);
+        FCWriteType(FCTypeRect, coder->_output);
+        FC_ALIGN_OUTPUT(double_t, coder->_output);
         FCWriteDouble((double_t)rect[0], coder->_output);
         FCWriteDouble((double_t)rect[1], coder->_output);
         FCWriteDouble((double_t)rect[2], coder->_output);
@@ -1552,7 +1750,8 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     {
         NSUInteger range[2];
         [self getValue:&range];
-        FCWriteUInt32(FCTypeRange, coder->_output);
+        FCWriteType(FCTypeRange, coder->_output);
+        FC_ALIGN_OUTPUT(uint32_t, coder->_output);
         FCWriteUInt32((uint32_t)range[0], coder->_output);
         FCWriteUInt32((uint32_t)range[1], coder->_output);
     }
@@ -1560,7 +1759,7 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     {
         CGFloat transform[6];
         [self getValue:&transform];
-        FCWriteUInt32(FCTypeAffineTransform, coder->_output);
+        FCWriteType(FCTypeAffineTransform, coder->_output);
         for (NSUInteger i = 0; i < 6; i++)
         {
             FCWriteDouble((double_t)transform[i], coder->_output);
@@ -1570,7 +1769,8 @@ CFHashCode FCDictionaryHashCallback(const void* value)
     {
         CGFloat transform[16];
         [self getValue:&transform];
-        FCWriteUInt32(FCType3DTransform, coder->_output);
+        FCWriteType(FCType3DTransform, coder->_output);
+        FC_ALIGN_OUTPUT(double_t, coder->_output);
         for (NSUInteger i = 0; i < 16; i++)
         {
             FCWriteDouble((double_t)transform[i], coder->_output);
@@ -1583,4 +1783,528 @@ CFHashCode FCDictionaryHashCallback(const void* value)
 }
 
 @end
+
+
+#pragma mark -
+#pragma mark legacy decoding
+
+
+static inline uint32_t FCReadRawUInt32_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_READ_VALUE(uint32_t, *decoder->_offset, decoder->_input, decoder->_total);
+    return value;
+}
+
+static inline double FCReadRawDouble_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_READ_VALUE(double_t, *decoder->_offset, decoder->_input, decoder->_total);
+    return value;
+}
+
+static id FCReadRawString_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    __autoreleasing NSString *string = nil;
+    NSUInteger length = strlen(decoder->_input + *decoder->_offset) + 1;
+    NSUInteger paddedLength = length + (4 - ((length % 4) ?: 4));
+    FC_ASSERT_FITS(paddedLength, *decoder->_offset, decoder->_total);
+    if (length > 1)
+    {
+        string = CFBridgingRelease(CFStringCreateWithBytes(NULL, decoder->_input + *decoder->_offset,
+                                                           (CFIndex)length - 1, kCFStringEncodingUTF8, false));
+    }
+    else
+    {
+        string = @"";
+    }
+    *decoder->_offset += paddedLength;
+    return string;
+}
+
+static id FCReadNull_2_3(__unused __unsafe_unretained FCNSDecoder *decoder)
+{
+    return [NSNull null];
+}
+
+static id FCReadAlias_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    return FCCachedObjectAtIndex(FCReadRawUInt32_2_3(decoder), decoder->_objectCache);
+}
+
+static id FCReadString_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    NSString *string = FCReadRawString_2_3(decoder);
+    FCCacheReadObject(string, decoder->_objectCache);
+    return string;
+}
+
+static id FCReadMutableString_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    __autoreleasing NSMutableString *string = nil;
+    NSUInteger length = strlen(decoder->_input + *decoder->_offset) + 1;
+    NSUInteger paddedLength = length + (4 - ((length % 4) ?: 4));
+    FC_ASSERT_FITS(paddedLength, *decoder->_offset, decoder->_total);
+    if (length > 1)
+    {
+        string = FC_AUTORELEASE([[NSMutableString alloc] initWithBytes:decoder->_input + *decoder->_offset length:length - 1 encoding:NSUTF8StringEncoding]);
+    }
+    else
+    {
+        string = [NSMutableString string];
+    }
+    *decoder->_offset += paddedLength;
+    FCCacheReadObject(string, decoder->_objectCache);
+    return string;
+}
+
+static id FCReadDictionary_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t count = FCReadRawUInt32_2_3(decoder);
+    __autoreleasing NSDictionary *dict = nil;
+    if (count)
+    {
+        __autoreleasing id *keys = (__autoreleasing id *)malloc(count * sizeof(id));
+        __autoreleasing id *objects = (__autoreleasing id *)malloc(count * sizeof(id));
+        for (uint32_t i = 0; i < count; i++)
+        {
+            objects[i] = FCReadObject_2_3(decoder);
+            keys[i] = FCReadObject_2_3(decoder);
+        }
+        
+        dict = [NSDictionary dictionaryWithObjects:objects forKeys:keys count:count];
+        free(objects);
+        free(keys);
+    }
+    else
+    {
+        dict = @{};
+    }
+    FCCacheReadObject(dict, decoder->_objectCache);
+    return dict;
+}
+
+static id FCReadMutableDictionary_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t count = FCReadRawUInt32_2_3(decoder);
+    __autoreleasing NSMutableDictionary *dict = CFBridgingRelease(CFDictionaryCreateMutable(NULL, (CFIndex)count, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
+    FCCacheReadObject(dict, decoder->_objectCache);
+    for (uint32_t i = 0; i < count; i++)
+    {
+        __autoreleasing id value = FCReadObject_2_3(decoder);
+        __autoreleasing id key = FCReadObject_2_3(decoder);
+        CFDictionarySetValue((__bridge CFMutableDictionaryRef)dict, (__bridge const void *)key, (__bridge const void *)value);
+    }
+    return dict;
+}
+
+static id FCReadArray_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t count = FCReadRawUInt32_2_3(decoder);
+    __autoreleasing NSArray *array = nil;
+    if (count)
+    {
+        __autoreleasing id *objects = (__autoreleasing id *)malloc(count * sizeof(id));
+        for (uint32_t i = 0; i < count; i++)
+        {
+            objects[i] = FCReadObject_2_3(decoder);
+        }
+        array = [NSArray arrayWithObjects:objects count:count];
+        free(objects);
+    }
+    else
+    {
+        array = @[];
+    }
+    FCCacheReadObject(array, decoder->_objectCache);
+    return array;
+}
+
+static id FCReadMutableArray_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t count = FCReadRawUInt32_2_3(decoder);
+    __autoreleasing NSMutableArray *array = [NSMutableArray arrayWithCapacity:count];
+    FCCacheReadObject(array, decoder->_objectCache);
+    for (uint32_t i = 0; i < count; i++)
+    {
+        CFArrayAppendValue((__bridge CFMutableArrayRef)array, (__bridge void *)FCReadObject_2_3(decoder));
+    }
+    return array;
+}
+
+static id FCReadSet_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t count = FCReadRawUInt32_2_3(decoder);
+    __autoreleasing NSSet *set = nil;
+    if (count)
+    {
+        __autoreleasing id *objects = (__autoreleasing id *)malloc(count * sizeof(id));
+        for (uint32_t i = 0; i < count; i++)
+        {
+            objects[i] = FCReadObject_2_3(decoder);
+        }
+        set = [NSSet setWithObjects:objects count:count];
+        free(objects);
+    }
+    else
+    {
+        set = [NSSet set];
+    }
+    FCCacheReadObject(set, decoder->_objectCache);
+    return set;
+}
+
+static id FCReadMutableSet_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t count = FCReadRawUInt32_2_3(decoder);
+    __autoreleasing NSMutableSet *set = [NSMutableSet setWithCapacity:count];
+    FCCacheReadObject(set, decoder->_objectCache);
+    for (uint32_t i = 0; i < count; i++)
+    {
+        [set addObject:FCReadObject_2_3(decoder)];
+    }
+    return set;
+}
+
+static id FCReadOrderedSet_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t count = FCReadRawUInt32_2_3(decoder);
+    __autoreleasing NSOrderedSet *set = nil;
+    if (count)
+    {
+        __autoreleasing id *objects = (__autoreleasing id *)malloc(count * sizeof(id));
+        for (uint32_t i = 0; i < count; i++)
+        {
+            objects[i] = FCReadObject_2_3(decoder);
+        }
+        set = [NSOrderedSet orderedSetWithObjects:objects count:count];
+        free(objects);
+    }
+    else
+    {
+        set = [NSOrderedSet orderedSet];
+    }
+    FCCacheReadObject(set, decoder->_objectCache);
+    return set;
+}
+
+static id FCReadMutableOrderedSet_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t count = FCReadRawUInt32_2_3(decoder);
+    __autoreleasing NSMutableOrderedSet *set = [NSMutableOrderedSet orderedSetWithCapacity:count];
+    FCCacheReadObject(set, decoder->_objectCache);
+    for (uint32_t i = 0; i < count; i++)
+    {
+        [set addObject:FCReadObject_2_3(decoder)];
+    }
+    return set;
+}
+
+static id FCReadTrue_2_3(__unused __unsafe_unretained FCNSDecoder *decoder)
+{
+    return @YES;
+}
+
+static id FCReadFalse_2_3(__unused __unsafe_unretained FCNSDecoder *decoder)
+{
+    return @NO;
+}
+
+static id FCReadInt32_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_READ_VALUE(int32_t, *decoder->_offset, decoder->_input, decoder->_total);
+    __autoreleasing NSNumber *number = @(value);
+    FCCacheReadObject(number, decoder->_objectCache);
+    return number;
+}
+
+static id FCReadInt64_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_READ_VALUE(int64_t, *decoder->_offset, decoder->_input, decoder->_total);
+    __autoreleasing NSNumber *number = @(value);
+    FCCacheReadObject(number, decoder->_objectCache);
+    return number;
+}
+
+static id FCReadfloat_t_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_READ_VALUE(float_t, *decoder->_offset, decoder->_input, decoder->_total);
+    __autoreleasing NSNumber *number = @(value);
+    FCCacheReadObject(number, decoder->_objectCache);
+    return number;
+}
+
+static id FCReaddouble_t_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_READ_VALUE(double_t, *decoder->_offset, decoder->_input, decoder->_total);
+    __autoreleasing NSNumber *number = @(value);
+    FCCacheReadObject(number, decoder->_objectCache);
+    return number;
+}
+
+static id FCReadData_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t length = FCReadRawUInt32_2_3(decoder);
+    NSUInteger paddedLength = length + (4 - ((length % 4) ?: 4));
+    FC_ASSERT_FITS(paddedLength, *decoder->_offset, decoder->_total);
+    __autoreleasing NSData *data = [NSData dataWithBytes:(decoder->_input + *decoder->_offset) length:length];
+    *decoder->_offset += paddedLength;
+    FCCacheReadObject(data, decoder->_objectCache);
+    return data;
+}
+
+static id FCReadMutableData_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t length = FCReadRawUInt32_2_3(decoder);
+    NSUInteger paddedLength = length + (4 - ((length % 4) ?: 4));
+    FC_ASSERT_FITS(paddedLength, *decoder->_offset, decoder->_total);
+    __autoreleasing NSMutableData *data = [NSMutableData dataWithBytes:(decoder->_input + *decoder->_offset) length:length];
+    *decoder->_offset += paddedLength;
+    FCCacheReadObject(data, decoder->_objectCache);
+    return data;
+}
+
+static id FCReadDate_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_READ_VALUE(NSTimeInterval, *decoder->_offset, decoder->_input, decoder->_total);
+    __autoreleasing NSDate *date = [NSDate dateWithTimeIntervalSince1970:value];
+    FCCacheReadObject(date, decoder->_objectCache);
+    return date;
+}
+
+static id FCReadClassDefinition_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    __autoreleasing FCClassDefinition *definition = FC_AUTORELEASE([[FCClassDefinition alloc] init]);
+    FCCacheReadObject(definition, decoder->_objectCache);
+    definition->_className = FCReadRawString_2_3(decoder);
+    uint32_t count = FCReadRawUInt32_2_3(decoder);
+    if (count)
+    {
+        __autoreleasing id *objects = (__autoreleasing id *)malloc(count * sizeof(id));
+        for (uint32_t i = 0; i < count; i++)
+        {
+            objects[i] = FCReadRawString_2_3(decoder);
+        }
+        __autoreleasing NSArray *propertyKeys = [NSArray arrayWithObjects:objects count:count];
+        definition->_propertyKeys = propertyKeys;
+        free(objects);
+    }
+    
+    //now return the actual object instance
+    return FCReadObject_2_3(decoder);
+}
+
+static id FCReadObjectInstance_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    __autoreleasing FCClassDefinition *definition = FCCachedObjectAtIndex(FCReadRawUInt32_2_3(decoder), decoder->_objectCache);
+    __autoreleasing Class objectClass = NSClassFromString(definition->_className);
+    __autoreleasing id object = nil;
+    if (objectClass)
+    {
+        object = FC_AUTORELEASE([[objectClass alloc] init]);
+    }
+    else if (definition->_className)
+    {
+        object = [NSMutableDictionary dictionaryWithObject:definition->_className forKey:@"$class"];
+    }
+    else if (object)
+    {
+        object = [NSMutableDictionary dictionary];
+    }
+    NSUInteger cacheIndex = FCCacheReadObject(object, decoder->_objectCache);
+    for (__unsafe_unretained NSString *key in definition->_propertyKeys)
+    {
+        [object setValue:FCReadObject_2_3(decoder) forKey:key];
+    }
+    id newObject = [object awakeAfterFastCoding];
+    if (newObject != object)
+    {
+        //TODO: this is only a partial solution, as any objects that referenced
+        //this object between when it was created and now will have received incorrect instance
+        FCReplaceCachedObject(cacheIndex, newObject, decoder->_objectCache);
+    }
+    return newObject;
+}
+
+static id FCReadNil_2_3(__unused __unsafe_unretained FCNSDecoder *decoder)
+{
+    return nil;
+}
+
+static id FCReadURL_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    __autoreleasing NSURL *URL = [NSURL URLWithString:FCReadObject_2_3(decoder) relativeToURL:FCReadObject_2_3(decoder)];
+    FCCacheReadObject(URL, decoder->_objectCache);
+    return URL;
+}
+
+static id FCReadPoint_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    CGPoint point = {(CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder)};
+    NSValue *value = [NSValue valueWithBytes:&point objCType:@encode(CGPoint)];
+    FCCacheReadObject(value, decoder->_objectCache);
+    return value;
+}
+
+static id FCReadSize_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    CGSize size = {(CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder)};
+    NSValue *value = [NSValue valueWithBytes:&size objCType:@encode(CGSize)];
+    FCCacheReadObject(value, decoder->_objectCache);
+    return value;
+}
+
+static id FCReadRect_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    CGRect rect =
+    {
+        {(CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder)},
+        {(CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder)}
+    };
+    NSValue *value = [NSValue valueWithBytes:&rect objCType:@encode(CGRect)];
+    FCCacheReadObject(value, decoder->_objectCache);
+    return value;
+}
+
+static id FCReadRange_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    NSRange range = {FCReadRawUInt32_2_3(decoder), FCReadRawUInt32_2_3(decoder)};
+    NSValue *value = [NSValue valueWithBytes:&range objCType:@encode(NSRange)];
+    FCCacheReadObject(value, decoder->_objectCache);
+    return value;
+}
+
+static id FCReadAffineTransform_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    CGAffineTransform transform =
+    {
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder),
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder),
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder)
+    };
+    NSValue *value = [NSValue valueWithBytes:&transform objCType:@encode(CGAffineTransform)];
+    FCCacheReadObject(value, decoder->_objectCache);
+    return value;
+}
+
+static id FCRead3DTransform_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    CGFloat transform[] =
+    {
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder),
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder),
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder),
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder),
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder),
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder),
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder),
+        (CGFloat)FCReadRawDouble_2_3(decoder), (CGFloat)FCReadRawDouble_2_3(decoder)
+    };
+    NSValue *value = [NSValue valueWithBytes:&transform objCType:@encode(CGFloat[16])];
+    FCCacheReadObject(value, decoder->_objectCache);
+    return value;
+}
+
+static id FCReadMutableIndexSet_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    uint32_t rangeCount = FCReadRawUInt32_2_3(decoder);
+    __autoreleasing NSMutableIndexSet *indexSet = [NSMutableIndexSet indexSet];
+    FCCacheReadObject(indexSet, decoder->_objectCache);
+    for (uint32_t i = 0; i < rangeCount; i++)
+    {
+        NSRange range = {FCReadRawUInt32_2_3(decoder), FCReadRawUInt32_2_3(decoder)};
+        [indexSet addIndexesInRange:range];
+    }
+    return indexSet;
+}
+
+static id FCReadIndexSet_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    __autoreleasing NSIndexSet *indexSet;
+    uint32_t rangeCount = FCReadRawUInt32_2_3(decoder);
+    if (rangeCount == 1)
+    {
+        //common case optimisation
+        NSRange range = {FCReadRawUInt32_2_3(decoder), FCReadRawUInt32_2_3(decoder)};
+        indexSet = [NSIndexSet indexSetWithIndexesInRange:range];
+    }
+    else
+    {
+        indexSet = [NSMutableIndexSet indexSet];
+        for (uint32_t i = 0; i < rangeCount; i++)
+        {
+            NSRange range = {FCReadRawUInt32_2_3(decoder), FCReadRawUInt32_2_3(decoder)};
+            [(NSMutableIndexSet *)indexSet addIndexesInRange:range];
+        }
+        indexSet = [indexSet copy];
+        
+    }
+    FCCacheReadObject(indexSet, decoder->_objectCache);
+    return indexSet;
+}
+
+static id FCReadNSCodedObject_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    NSString *className = FCReadObject_2_3(decoder);
+    NSMutableDictionary *oldProperties = decoder->_properties;
+    decoder->_properties = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
+    while (true)
+    {
+        id object = FCReadObject_2_3(decoder);
+        if (!object) break;
+        NSString *key = FCReadObject_2_3(decoder);
+        decoder->_properties[key] = object;
+    }
+    id object = [[NSClassFromString(className) alloc] initWithCoder:decoder];
+    decoder->_properties = oldProperties;
+    FCCacheReadObject(object, decoder->_objectCache);
+    return object;
+}
+
+static id FCReadObject_2_3(__unsafe_unretained FCNSDecoder *decoder)
+{
+    static id (*constructors[])(FCNSDecoder *) =
+    {
+        FCReadNull_2_3,
+        FCReadAlias_2_3,
+        FCReadString_2_3,
+        FCReadDictionary_2_3,
+        FCReadArray_2_3,
+        FCReadSet_2_3,
+        FCReadOrderedSet_2_3,
+        FCReadTrue_2_3,
+        FCReadFalse_2_3,
+        FCReadInt32_2_3,
+        FCReadInt64_2_3,
+        FCReadfloat_t_2_3,
+        FCReaddouble_t_2_3,
+        FCReadData_2_3,
+        FCReadDate_2_3,
+        FCReadMutableString_2_3,
+        FCReadMutableDictionary_2_3,
+        FCReadMutableArray_2_3,
+        FCReadMutableSet_2_3,
+        FCReadMutableOrderedSet_2_3,
+        FCReadMutableData_2_3,
+        FCReadClassDefinition_2_3,
+        FCReadObjectInstance_2_3,
+        FCReadNil_2_3,
+        FCReadURL_2_3,
+        FCReadPoint_2_3,
+        FCReadSize_2_3,
+        FCReadRect_2_3,
+        FCReadRange_2_3,
+        FCReadAffineTransform_2_3,
+        FCRead3DTransform_2_3,
+        FCReadMutableIndexSet_2_3,
+        FCReadIndexSet_2_3,
+        FCReadNSCodedObject_2_3
+    };
+    
+    uint32_t type = FCReadRawUInt32_2_3(decoder);
+    if ((uint32_t)type > sizeof(constructors) / sizeof(id))
+    {
+        [NSException raise:FastCodingException format:@"FastCoding cannot decode object of type: %i", type];
+        return nil;
+    }
+    return ((id (*)(FCNSDecoder *))constructors[type])(decoder);
+}
 

@@ -19,14 +19,14 @@
 
 @implementation ViewController
 
-NSString *LogLoading(NSString *name, NSTimeInterval start, NSTimeInterval loaded, NSTimeInterval parsed)
+static NSString *LogLoading(NSString *name, NSTimeInterval start, NSTimeInterval loaded, NSTimeInterval parsed)
 {
     return [NSString stringWithFormat:@"%@ loading: %.0f ms, parsing: %.0f ms, total: %.0f ms", name, (loaded - start) * 1000, (parsed - loaded) * 1000, (parsed - start) * 1000];
 }
 
-NSString *LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written, NSTimeInterval saved)
+static NSString *LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written, NSTimeInterval saved, long long bytes)
 {
-    return [NSString stringWithFormat:@"%@ writing: %.0f ms, saving: %.0f ms, total: %.0f ms", name, (written - start) * 1000, (saved - written) * 1000, (saved - start) * 1000];
+    return [NSString stringWithFormat:@"%@ writing: %.0f ms, saving: %.0f ms, total: %.0f ms, size: %lld bytes", name, (written - start) * 1000, (saved - written) * 1000, (saved - start) * 1000, bytes];
 }
 
 - (IBAction)runBenchmark
@@ -76,9 +76,9 @@ NSString *LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written
     [FastCoder objectWithData:data];
     CFTimeInterval fastArchiveParsed = CFAbsoluteTimeGetCurrent();
     
-    self.label.text = [@[LogSaving(@"Keyed Archive", start, keyedArchiveWritten, keyedArchiveSaved),
+    self.label.text = [@[LogSaving(@"Keyed Archive", start, keyedArchiveWritten, keyedArchiveSaved, (long long)[data length]),
                          LogLoading(@"Keyed Archive", keyedArchiveSaved, keyedArchiveLoaded, keyedArchiveParsed),
-                         LogSaving(@"Fast Archive", keyedArchiveParsed, fastArchiveWritten, fastArchiveSaved),
+                         LogSaving(@"Fast Archive", keyedArchiveParsed, fastArchiveWritten, fastArchiveSaved, (long long)[data length]),
                          LogLoading(@"Fast Archive", fastArchiveSaved, fastArchiveLoaded, fastArchiveParsed)] componentsJoinedByString:@"\n"];
 }
 
