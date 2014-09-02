@@ -104,7 +104,7 @@ NSString *LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written
     CFTimeInterval fastArchiveLoaded = CFAbsoluteTimeGetCurrent();
     
     //parse fast archive
-    object = [FastCoder objectWithData:data];
+    id result = [FastCoder objectWithData:data];
     CFTimeInterval fastArchiveParsed = CFAbsoluteTimeGetCurrent();
     
     self.label.text = [@[LogSaving(@"JSON", start, jsonWritten, jsonSaved),
@@ -115,6 +115,8 @@ NSString *LogSaving(NSString *name, NSTimeInterval start, NSTimeInterval written
                          LogLoading(@"Keyed Archive", keyedArchiveSaved, keyedArchiveLoaded, keyedArchiveParsed),
                          LogSaving(@"Fast Archive", keyedArchiveParsed, fastArchiveWritten, fastArchiveSaved),
                          LogLoading(@"Fast Archive", fastArchiveSaved, fastArchiveLoaded, fastArchiveParsed)] componentsJoinedByString:@"\n"];
+  
+    if (![result isEqual:object]) [NSException raise:FastCodingException format:@"result didn't match"];
 }
 
 - (void)viewDidLoad

@@ -83,7 +83,7 @@
 
 - (void)testAliasing
 {
-    Model *model = [[Model alloc] init];
+    __strong Model *model = [[Model alloc] init];
     model.array1 = @[@1, @2];
     model.array2 = model.array1;
     
@@ -94,6 +94,7 @@
     model = [FastCoder objectWithData:data];
     
     //check properties
+    XCTAssertNotNil(model);
     XCTAssertEqualObjects(model.array1, model.array2);
     XCTAssertEqual(model.array1, model.array2);
     

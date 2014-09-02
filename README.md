@@ -52,6 +52,10 @@ FastCoder implements the following methods:
     
 Constructs an object tree from an FastCoded data object and returns it.
 
+    + (id)propertyListWithData:(NSData *)data;
+    
+Like `objectWithData:`, but this method is limited to loading "safe" object types such as `NSString`, `NSNumber`, `NSArray`, etc. Technically, this method is not limited to objects supported by `NSPropertyList` - for example it supports `NSNull` and `NSURL` - however it is safe to use for loading files from untrusted sources. Note that malformed or non-compliant files may throw an exception.
+
     + (NSData *)dataWithRootObject:(id)object;
     
 Archives an object graph as a block of data, which can then be saved to a file or transmitted.
@@ -169,54 +173,24 @@ File structure
 
 The FastArchive format is very simple:
 
-There is a header consisting of a a 32-bit identifier, followed by two 16-bit version numbers (major and minor). The header is followed by a 32-bit integer representing the total number of unique objects encoded in the file (this is not the same as the number of chunks). This value can be used to set the size of the capacity of the known object cache in advance, which provides some performance benefit. If the object count is not set (has a value of zero), the cache will be grown dynamically.
+There is a header consisting of a a 32-bit identifier, followed by two 16-bit version numbers (major and minor). The header is followed by three 32-bit integers representing the total number of unique objects, classes and strings encoded in the file (this is not the same as the number of chunks). These values can be used to set the capacities of the object caches in advance, which provides some performance benefit. If the object counts are not set (has a value of zero), the cache will be grown dynamically.
 
-Following the header and object count, there are a series of chunks. Each chunk consists of a 32-bit type identifier, followed by 0 or more additional bytes of data, depending on the chunk type.
+Following the header and object counts, there are a series of chunks. Each chunk consists of an 8-bit type identifier, followed by 0 or more additional bytes of data, depending on the chunk type.
 
 Commonly used types and values are represented by their own chunk in order to reduce file size and processing overhead. Other types such as strings or collections are encoded in the sequence of bytes that follow the chunk.
 
-Chunks are always 32-bit (4-byte) aligned. Most chunk types have sizes that are a multiples of 32 bits anyway, but strings and data objects whose length is not an exact multiple of 4 bytes are padded to the nearest 4-byte offset.
-
-The chunk types supported by FastCoding are:
-
-    FCTypeNull                  an NSNull value
-    FCTypeAlias                 an alias to an previously encoded chunk in the file
-    FCTypeString                an NSString instance
-    FCTypeDictionary            an NSDictionary instance
-    FCTypeArray                 an NSArray instance
-    FCTypeSet                   an NSSet instance
-    FCTypeOrderedSet            an NSOrderedSet instance
-    FCTypeTrue                  a boolean YES value
-    FCTypeFalse                 a boolean NO value
-    FCTypeInt32                 a 32-bit integer value
-    FCTypeInt64                 a 64-bit integer value
-    FCTypeFloat32               a 32-bit floating point value
-    FCTypeFloat64               a 64-bit floating point value
-    FCTypeData                  an NSData instance
-    FCTypeDate                  an NSDate instance
-    FCTypeMutableString         an NSMutableString instance
-    FCTypeMutableDictionary     an NSMutableDictionary instance
-    FCTypeMutableArray          an NSMutableArray instance
-    FCTypeMutableSet            an NSMutableSet instance
-    FCTypeMutableOrderedSet     an NSMutableOrderedSet instance
-    FCTypeMutableData           an NSMutableData instance
-    FCTypeClassDefinition       a class definition (this is a private, internal type used for object encoding)
-    FCTypeObject                an arbitrary object, encoded using the FastCoding protocol
-    FCTypeNil                   a nil value (not the same as NSNull), used for nil object properties
-    FCTypeURL                   an NSURL value
-    FCTypePoint                 an NSPoint/CGPoint value
-    FCTypeSize                  an NSSize/CGSize value
-    FCTypeRect                  an NSRect/CGRect value
-    FCTypeRange                 an NSRange value
-    FCTypeAffineTransform       a CGAffineTransform value
-    FCType3DTransform           a CATransform3D value
-    FCTypeIndexSet              an NSIndexSet instance
-    FCTypeMutableIndexSet       an NSMutableIndexSet instance
-    FCTypeNSCodedObject         an NSCoded object
-    
     
 Release notes
 ------------------
+
+Version 3.0
+
+- Brand new file format that is both smaller and faster to encode/decode than before
+- Added +propertyListWithData method for safely loading files from untrusted sources
+- Parsing exceptions are now caught internally - in the event of an error, methods will return nil
+- Fully backwards compatible with version 2.x files
+- Fixed floating point precision bug
+- Added support for CGVector type
 
 Version 2.3
  

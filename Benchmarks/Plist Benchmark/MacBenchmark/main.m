@@ -1,3 +1,4 @@
+
 //
 //  main.m
 //  FastCoding
@@ -123,9 +124,12 @@ int main(__unused int argc, __unused const char * argv[])
         CFTimeInterval fastArchiveLoaded = CFAbsoluteTimeGetCurrent();
         
         //parse fast archive
-        [FastCoder objectWithData:data];
+        id result = [FastCoder propertyListWithData:data];
         CFTimeInterval fastArchiveParsed = CFAbsoluteTimeGetCurrent();
         LogLoading(@"Fast Archive", fastArchiveSaved, fastArchiveLoaded, fastArchiveParsed);
+      
+        //validate data
+        if (![result isEqual:object]) [NSException raise:FastCodingException format:@"result didn't match"];
     }
     
     return 0;
