@@ -211,11 +211,34 @@ There is a header consisting of a a 32-bit identifier, followed by two 16-bit ve
 Following the header and object counts, there are a series of chunks. Each chunk consists of an 8-bit type identifier, followed by 0 or more additional bytes of data, depending on the chunk type.
 
 Commonly used types and values are represented by their own chunk in order to reduce file size and processing overhead. Other types such as strings or collections are encoded in the sequence of bytes that follow the chunk.
+ 
+ 
+Migration from 3.0
+--------------------
+ 
+Unfortunately version 3.0 files did not work on ARM7/ARM7s due to data alignment issues. If you saved data using that version and need to recover it, do the following:
+ 
+Find the following macro in the FastCoder.m file:
+ 
+    #define FC_ALIGN_INPUT(type, offset) { \
+    unsigned long align = offset % sizeof(type); \
+    if (align) offset += sizeof(type) - align; }
+ 
+Modify it to this:
+ 
+    #define FC_ALIGN_INPUT(type, offset)
+ 
+Load the file and save it again. Now change the macro back again.
 
     
 Release notes
 ------------------
 
+Version 3.0.1
+ 
+- Enabled data alignment to fix crash on ARM 32 devices
+- Files created using version 3.0 cannot be loaded, there is a manual migration process if needed (see above)
+ 
 Version 3.0
 
 - Brand new file format that is both smaller and faster to encode/decode than before

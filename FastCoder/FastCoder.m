@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 3.0
+//  Version 3.0.1
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -125,17 +125,20 @@ typedef NS_ENUM(uint8_t, FCType)
 #endif
 
 
+#ifdef TARGET_OS_IPHONE
+#define OR_IF_MAC(x)
+#else
+#define OR_IF_MAC(x) || (x)
+#endif
+
+
 #define FC_ASSERT_FITS(length, offset, total) { if ((NSUInteger)((offset) + (length)) > (total)) \
 [NSException raise:FastCodingException format:@"Unexpected EOF when parsing object starting at %i", (int32_t)(offset)]; }
-
 
 #define FC_READ_VALUE(type, offset, input, total) type value; { \
 FC_ASSERT_FITS (sizeof(type), offset, total); \
 value = *(type *)(input + offset); \
 offset += sizeof(value); }
-
-
-#ifdef FC_ALIGN_DATA // enabling doesn't seem to improve performance
 
 #define FC_ALIGN_INPUT(type, offset) { \
 unsigned long align = offset % sizeof(type); \
@@ -144,20 +147,6 @@ if (align) offset += sizeof(type) - align; }
 #define FC_ALIGN_OUTPUT(type, output) { \
 unsigned long align = [output length] % sizeof(type); \
 if (align) [output increaseLengthBy:sizeof(type) - align]; }
-
-#else
-
-#define FC_ALIGN_INPUT(type, offset)
-#define FC_ALIGN_OUTPUT(type, output)
-
-#endif
-
-
-#ifdef TARGET_OS_IPHONE
-#define OR_IF_MAC(x)
-#else
-#define OR_IF_MAC(x) || (x)
-#endif
 
 
 @interface FCNSCoder : NSCoder
