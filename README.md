@@ -12,7 +12,7 @@ FastCoder is already faster (on average) for reading than any of the built-in se
 
 FastCoder supports more data types than either JSON or Plist coding (including NSURL, NSValue, NSSet and NSOrderedSet), and allows all supported object types to be used as the keys in a dictionary, not just strings.
 
-FastCoder can also serialize your custom classes automatically using property inspection. For cases where this doesn't work automatically, you can easily implement your own serialization using the FastCoding Protocol.
+FastCoder can also serialize your custom classes automatically using property inspection. For cases where this doesn't work automatically, you can easily implement your own serialization using the FastCoding or NSCoding protocols.
 
 
 Supported OS & SDK Versions
@@ -43,6 +43,49 @@ Installation
 To use FastCoder, just drag the FastCoder.h and .m files into your project.
 
 
+Security
+--------------
+
+The FastCoding parser checks for buffer overflow errors whilst parsing, and will throw an exception if the data instructs it to try to read past the end of the data file. This should prevent most kinds of code injection attack.
+
+Whilst it is not possible to use a FastCoded file to inject code, as with NSCoding, an attacker use a modified FastCoded file to cause unexpected classes to be created in your object graph, which might present a potential attack risk (note that only classes that already exist in your code base or a built-in Framework can be created this way).
+
+For the time being, it is best not to try to load arbitrary FastCoded files from an untrusted source (although it is fine to use them for saving data internally within your application). If you want to exchange FastCoded files between apps or users, use only the explicitly supported class types (listed below) and load the file using `propertyListWithData:`, which only supports safe types and will refus to load a file containing unknonw classes. A future release of the FastCoding library will add more sophisticated whitelisting capabilities.
+
+
+Supported Classes
+------------------
+
+FastCoding supports the following class types natively:
+
+    NSNull
+    NSNumber
+    NSValue (only the following subtypes)
+        CGPoint/NSPoint
+        CGSize/NSSize
+        CGRect/NSRect
+        CGVector
+        NSRange
+        CGAffineTransform
+        CATransform3D
+    NSString
+    NSArray
+    NSMutableArray
+    NSDictionary
+    NSMutableDictionary
+    NSSet
+    NSMutableSet
+    NSOrderedSet
+    NSMutableOrderedSet
+    NSIndexSet
+    NSMutableIndexSet
+    NSData
+    NSMutableData
+    NSDate
+
+FastCoding also automatically supports any class that complies with the NSCoding protocol, or any class whose proeprties are KVC-compliant, or which explicity implements the FastCoding protocol.
+
+
 FastCoder methods
 -----------------------------
 
@@ -50,15 +93,15 @@ FastCoder implements the following methods:
 
     + (id)objectWithData:(NSData *)data;
     
-Constructs an object tree from an FastCoded data object and returns it.
+Constructs an object tree from an FastCoded data object and returns it. FastCoder does not currently provide any mechanism for class validation or substitution, so this method should not be used for loading files with unknown provenance (i.e. where you can't guarantee where the file came from, or that the file hasn't been tampered with). For exachanging files between apps, or for user accessible documents, it is recommended that you use the `propertyListWithData:` method for loading the file instead (akthough this does not support arbitrary classes). If an unknown class type is encountered in the file, it will be loaded as a dictionary of properties that can be converted back into a real class later (see 'Bootstrapping' below). Attempting to load a malformed or corrupt file will throw an exception (caught internally) and return nil.
 
     + (id)propertyListWithData:(NSData *)data;
     
-Like `objectWithData:`, but this method is limited to loading "safe" object types such as `NSString`, `NSNumber`, `NSArray`, etc. Technically, this method is not limited to objects supported by `NSPropertyList` - for example it supports `NSNull` and `NSURL` - however it is safe to use for loading files from untrusted sources. Note that malformed or non-compliant files may throw an exception.
+Like `objectWithData:`, but this method is limited to loading "safe" object types such as `NSString`, `NSNumber`, `NSArray`, etc. Despite the name, this method is not actually limited to objects supported by `NSPropertyList` - for example it supports `NSNull` and `NSURL` - however it is safe to use for loading files from untrusted sources. Also, unlike ordinary property list methods, this can handle circular references, aliased objects and mutable containers like `NSMutableArray`. Attempting to load a malformed or corrupt file, or one containing unsupported classes will throw an exception (caught internally) and return nil.
 
     + (NSData *)dataWithRootObject:(id)object;
     
-Archives an object graph as a block of data, which can then be saved to a file or transmitted.
+Archives an object graph as a block of data, which can then be saved to a file or transmitted via a network. The file can be loaded again using `objectWithData:`, or `propertyListWithData:` (provided that it only contains supported class types).
 
 
 The FastCoding Protocol
@@ -80,7 +123,7 @@ This method is used to supply an alternative class to use for coding/decoding an
  
     - (BOOL)preferFastCoding;
 
-Because FastCoding automatically supports NSCoding, any object that conforms to the NSCoding protocol (except for types that are explicitly supported by FastCoding) will be encoded using the NSCoding methods. This is better for compatibility purposes, but is slightly slower than using the FastCoding protocol. If your class supports both NSCoding and FastCoding, and you would prefer FastCoder to use the FastCoding protocol, override this method and return YES (the default value is NO).
+Because FastCoding automatically supports NSCoding, any object that conforms to the NSCoding protocol (except for types that are explicitly supported by FastCoding) will be encoded using the NSCoding methods by default. This is better for compatibility purposes, but may be signficantly slower than using the FastCoding protocol. If your class supports both NSCoding and FastCoding, and you would prefer FastCoder to use the FastCoding protocol, override this method and return YES (the default value is NO).
  
 
 Overriding Default FastCoding Behaviour
@@ -99,16 +142,6 @@ If you wish to substitute a different class for decoding, you can implement the 
 If you have removed or renamed a property of a class, and want to provide backward compatibility for a previously saved FastCoder file, you should implement a private setter method for the old property, which you can then map to wherever it should go in the new object structure. E.g. if the old property was called foo, add a private -setFoo: method. Alternatively, override the -setValue:forUndefinedKey: method to gracefully handle any unknown property.
  
 If you want more precise control of the coding, such as using different names for keys, etc. then you can implement the NSCoding protocol. By default, if a class implements NSCoding, FastCoder will rely on the NSCoding methods to encode the object instead of automatically detecting the keys.
-
-
-Security
---------------
-
-The FastCoding parser checks for buffer overflow errors whilst parsing, and will throw an exception if the data instructs it to try to read past the end of the data file. This should prevent most kinds of code injection attack.
-
-Whilst it is not possible to use a FastCoded file to inject code, as with NSCoding, an attacker use a modified FastCoded file to cause unexpected classes to be created in your object graph, which might present a potential attack risk (note that only classes that already exist in your code base or a built-in Framework can be created this way).
-
-For the time being, it is best not to try to load FastCoded files from an untrusted source (although it is fine to use them for saving data internally within your application). A future release of the FastCoding library will attempt to address this issue by whitelisting classes for decoding.
 
 
 Bootstrapping

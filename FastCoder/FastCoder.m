@@ -328,8 +328,8 @@ static id FCReadAlias32(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadStringAlias8(__unsafe_unretained FCNSDecoder *decoder)
 {
-  FC_ALIGN_INPUT(uint8_t, *decoder->_offset);
-  return FCCachedObjectAtIndex(FCReadRawUInt8(decoder), decoder->_stringCache);
+    FC_ALIGN_INPUT(uint8_t, *decoder->_offset);
+    return FCCachedObjectAtIndex(FCReadRawUInt8(decoder), decoder->_stringCache);
 }
 
 static id FCReadStringAlias16(__unsafe_unretained FCNSDecoder *decoder)
