@@ -234,6 +234,10 @@ Load the file and save it again. Now change the macro back again.
 Release notes
 ------------------
 
+Version 3.0.2
+ 
+- Fixed bug when encoding NSDate objects, due to alignment error
+ 
 Version 3.0.1
  
 - Enabled data alignment to fix crash on ARM 32 devices

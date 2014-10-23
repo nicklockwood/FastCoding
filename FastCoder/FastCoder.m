@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 3.0.1
+//  Version 3.0.2
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -31,23 +31,23 @@
 //
 
 #import "FastCoder.h"
-#import <objc/message.h>
+#import <objc/runtime.h>
 #import <CoreGraphics/CoreGraphics.h>
 
 
 #import <Availability.h>
 #if __has_feature(objc_arc)
-#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma clang diagnostic ignored "-Wpedantic"
 #warning FastCoding runs slower under ARC. It is recommended that you disable it for this file
 #endif
 
 
-#pragma GCC diagnostic ignored "-Wgnu"
-#pragma GCC diagnostic ignored "-Wpointer-arith"
-#pragma GCC diagnostic ignored "-Wmissing-prototypes"
-#pragma GCC diagnostic ignored "-Wfour-char-constants"
-#pragma GCC diagnostic ignored "-Wobjc-missing-property-synthesis"
-#pragma GCC diagnostic ignored "-Wdirect-ivar-access"
+#pragma clang diagnostic ignored "-Wgnu"
+#pragma clang diagnostic ignored "-Wpointer-arith"
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
+#pragma clang diagnostic ignored "-Wfour-char-constants"
+#pragma clang diagnostic ignored "-Wobjc-missing-property-synthesis"
+#pragma clang diagnostic ignored "-Wdirect-ivar-access"
 
 
 NSString *const FastCodingException = @"FastCodingException";
@@ -125,7 +125,8 @@ typedef NS_ENUM(uint8_t, FCType)
 #endif
 
 
-#ifdef TARGET_OS_IPHONE
+#import <TargetConditionals.h>
+#if TARGET_OS_IPHONE
 #define OR_IF_MAC(x)
 #else
 #define OR_IF_MAC(x) || (x)
@@ -1586,6 +1587,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
     FCCacheWrittenObject(self, coder->_objectCache);
     FCWriteType(FCTypeDate, coder->_output);
     NSTimeInterval value = [self timeIntervalSince1970];
+    FC_ALIGN_OUTPUT(NSTimeInterval, coder->_output);
     [coder->_output appendBytes:&value length:sizeof(value)];
 }
 

@@ -182,4 +182,17 @@
     XCTAssertEqualObjects([output classForCoder], [NSMutableIndexSet class]);
 }
 
+- (void)testDateAlignment
+{
+    //create array with potentially misaligned date
+    NSArray *input = @[@1, [NSDate dateWithTimeIntervalSinceNow:5]];
+    
+    //convert to FastCoded data
+    NSData *data = [FastCoder dataWithRootObject:input];
+    NSArray *output = [FastCoder objectWithData:data];
+    
+    //check
+    XCTAssertEqualObjects([input description], [output description]);
+}
+
 @end

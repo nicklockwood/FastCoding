@@ -1,6 +1,6 @@
 FastCoding
 
-Version 3.0.1, September 3rd, 2014
+Version 3.0.2, October 23rd, 2014
 
 Copyright (C) 2013 Charcoal Design
 
