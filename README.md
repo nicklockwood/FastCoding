@@ -69,6 +69,7 @@ FastCoding supports the following class types natively:
         CGAffineTransform
         CATransform3D
     NSString
+    NSMutableString
     NSArray
     NSMutableArray
     NSDictionary
