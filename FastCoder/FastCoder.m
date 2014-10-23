@@ -114,7 +114,7 @@ typedef NS_ENUM(uint8_t, FCType)
     FCTypeIndexSet,
     FCTypeNSCodedObject,
   
-    FCTypeMax // sentinel value
+    FCTypeCount // sentinel value
 };
 
 
@@ -834,7 +834,7 @@ static id FCReadObject(__unsafe_unretained FCNSDecoder *decoder)
 {
     FCType type = FCReadType(decoder);
     FCTypeConstructor *constructor = NULL;
-    if (type < FCTypeMax)
+    if (type < FCTypeCount)
     {
         constructor = decoder->_constructors[type];
     }
@@ -1190,7 +1190,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
           
             //set string count
             uint32_t stringCount = (uint32_t)[stringCache count];
-            [output replaceBytesInRange:NSMakeRange(sizeof(header) + 2 * sizeof(uint32_t), sizeof(uint32_t)) withBytes:&stringCount];
+            [output replaceBytesInRange:NSMakeRange(sizeof(header) + sizeof(uint32_t) * 2, sizeof(uint32_t)) withBytes:&stringCount];
             
             return output;
         }

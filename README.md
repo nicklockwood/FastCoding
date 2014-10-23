@@ -18,7 +18,7 @@ FastCoder can also serialize your custom classes automatically using property in
 Supported OS & SDK Versions
 -----------------------------
 
-* Supported build target - iOS 8.0 / Mac OS 10.9 (Xcode 6.0, Apple LLVM compiler 6.0)
+* Supported build target - iOS 8.1 / Mac OS 10.10 (Xcode 6.1, Apple LLVM compiler 6.0)
 * Earliest supported deployment target - iOS 5.0 / Mac OS 10.7
 * Earliest compatible deployment target - iOS 4.0 / Mac OS 10.6
 
@@ -237,6 +237,7 @@ Release notes
 Version 3.0.2
  
 - Fixed bug when encoding NSDate objects, due to alignment error
+- Fixed bug where class and string counts were set incorrectly (minor performance impact)
  
 Version 3.0.1
  
