@@ -1189,7 +1189,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
           
             //set string count
             uint32_t stringCount = (uint32_t)[stringCache count];
-            [output replaceBytesInRange:NSMakeRange(sizeof(header) + sizeof(uint32_t), sizeof(uint32_t)) withBytes:&stringCount];
+            [output replaceBytesInRange:NSMakeRange(sizeof(header) + 2 * sizeof(uint32_t), sizeof(uint32_t)) withBytes:&stringCount];
             
             return output;
         }
