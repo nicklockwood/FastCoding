@@ -237,13 +237,17 @@ Load the file and save it again. Now change the macro back again.
     
 Release notes
 ------------------
- 
+
+Version 3.1.1
+
+- Fixed crash when encoding classes where encodeWithCoder: contains an enumeration block
+
 Version 3.1
 
 - NSDecimalNumber is now supported (previously was encoded as NSNumber)
 - Fixed bug with NSCoding support
-- Fixed alignment ossue when reading encoded NSDate objects (dates are hard, OK?!)
-- Fixed crash when using FastCoding + ARC (but you still shouldn't use ARC)
+- Fixed alignment issue when reading encoded NSDate objects (dates are hard, OK?)
+- Fixed crash when using FastCoding with ARC (but you still shouldn't use ARC)
 
 Version 3.0.2
  

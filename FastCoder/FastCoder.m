@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 3.1
+//  Version 3.1.1
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -1185,24 +1185,13 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         FCWriteUInt32(0, output);
         FCWriteUInt32(0, output);
         FCWriteUInt32(0, output);
-        
-        //set up cache
-        const CFDictionaryKeyCallBacks stringKeyCallbacks =
-        {
-            0,
-            NULL,
-            NULL,
-            NULL,
-            CFEqual,
-            CFHash
-        };
-        
+
         @autoreleasepool
         {
             __autoreleasing id objectCache = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, NULL, NULL));
             __autoreleasing id classCache = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, NULL, NULL));
-            __autoreleasing id stringCache = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &stringKeyCallbacks, NULL));
-            __autoreleasing id classesByName = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &stringKeyCallbacks, NULL));
+            __autoreleasing id stringCache = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &kCFCopyStringDictionaryKeyCallBacks, NULL));
+            __autoreleasing id classesByName = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &kCFCopyStringDictionaryKeyCallBacks, NULL));
             
             //create coder
             FCNSCoder *coder = FC_AUTORELEASE([[FCNSCoder alloc] init]);
