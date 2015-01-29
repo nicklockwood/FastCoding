@@ -844,7 +844,7 @@ static id FCReadNSCodedObject(__unsafe_unretained FCNSDecoder *decoder)
         NSString *key = FCReadObject(decoder);
         decoder->_properties[key] = object;
     }
-    id object = [[NSClassFromString(className) alloc] initWithCoder:decoder];
+    id object = FC_AUTORELEASE([[NSClassFromString(className) alloc] initWithCoder:decoder]);
     [decoder->_propertyDictionaryPool addObject:decoder->_properties];
     decoder->_properties = oldProperties;
     FCCacheParsedObject(object, decoder->_objectCache);
@@ -2466,7 +2466,7 @@ static id FCReadNSCodedObject_2_3(__unsafe_unretained FCNSDecoder *decoder)
         NSString *key = FCReadObject_2_3(decoder);
         decoder->_properties[key] = object;
     }
-    id object = [[NSClassFromString(className) alloc] initWithCoder:decoder];
+    id object = FC_AUTORELEASE([[NSClassFromString(className) alloc] initWithCoder:decoder]);
     decoder->_properties = oldProperties;
     FCCacheParsedObject(object, decoder->_objectCache);
     return object;
