@@ -238,6 +238,11 @@ Load the file and save it again. Now change the macro back again.
 Release notes
 ------------------
 
+Version 3.2
+
+- Fixed subtle bug where @YES and @1 were unexpectedly being treated as different keys in a CFMutableDictionary on 32-bit devices
+- NSNumber values of 1 and 0 are no longer encoded as booleans (related to the above fix)
+
 Version 3.1.1
 
 - Fixed crash when encoding classes where encodeWithCoder: contains an enumeration block

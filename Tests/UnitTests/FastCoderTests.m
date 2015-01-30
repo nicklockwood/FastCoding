@@ -195,4 +195,14 @@
     XCTAssertEqualObjects([input description], [output description]);
 }
 
+- (void)testBooleans
+{
+    NSNumber *input = @1;
+    NSData *data = [FastCoder dataWithRootObject:input];
+    NSNumber *output = [FastCoder objectWithData:data];
+  
+    //check
+    XCTAssertEqualObjects([input class], [output class]);
+}
+
 @end
