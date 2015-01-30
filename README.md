@@ -242,6 +242,7 @@ Version 3.2
 
 - Fixed subtle bug where @YES and @1 were unexpectedly being treated as different keys in a CFMutableDictionary on 32-bit devices
 - NSNumber values of 1 and 0 are no longer encoded as booleans (related to the above fix)
+- Fixed leak when reading NSCoded objects
 
 Version 3.1.1
 
