@@ -238,6 +238,10 @@ Load the file and save it again. Now change the macro back again.
 Release notes
 ------------------
 
+Verion 3.2.1
+
+- Fixed possible alignment issue with Float64 types on 32-bit processors
+
 Version 3.2
 
 - Fixed subtle bug where @YES and @1 were unexpectedly being treated as different keys in a CFMutableDictionary on 32-bit devices

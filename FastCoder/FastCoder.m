@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 3.2
+//  Version 3.2.1
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -299,7 +299,7 @@ static inline uint32_t FCReadRawUInt32(__unsafe_unretained FCNSDecoder *decoder)
 
 static inline double FCReadRawDouble(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_READ_VALUE(double_t, *decoder->_offset, decoder->_input, decoder->_total);
+    FC_READ_VALUE(Float64, *decoder->_offset, decoder->_input, decoder->_total);
     return value;
 }
 
@@ -612,16 +612,16 @@ static id FCReadInt64(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadFloat32(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_ALIGN_INPUT(float_t, *decoder->_offset);
-    FC_READ_VALUE(float_t, *decoder->_offset, decoder->_input, decoder->_total);
+    FC_ALIGN_INPUT(Float32, *decoder->_offset);
+    FC_READ_VALUE(Float32, *decoder->_offset, decoder->_input, decoder->_total);
     __autoreleasing NSNumber *number = @(value);
     return number;
 }
 
 static id FCReadFloat64(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_ALIGN_INPUT(double_t, *decoder->_offset);
-    FC_READ_VALUE(double_t, *decoder->_offset, decoder->_input, decoder->_total);
+    FC_ALIGN_INPUT(Float64, *decoder->_offset);
+    FC_READ_VALUE(Float64, *decoder->_offset, decoder->_input, decoder->_total);
     __autoreleasing NSNumber *number = @(value);
     return number;
 }
@@ -740,7 +740,7 @@ static id FCReadURL(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadPoint(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_ALIGN_INPUT(double_t, *decoder->_offset);
+    FC_ALIGN_INPUT(Float64, *decoder->_offset);
     CGPoint point = {(CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder)};
     NSValue *value = [NSValue valueWithBytes:&point objCType:@encode(CGPoint)];
     return value;
@@ -748,7 +748,7 @@ static id FCReadPoint(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadSize(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_ALIGN_INPUT(double_t, *decoder->_offset);
+    FC_ALIGN_INPUT(Float64, *decoder->_offset);
     CGSize size = {(CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder)};
     NSValue *value = [NSValue valueWithBytes:&size objCType:@encode(CGSize)];
     return value;
@@ -756,7 +756,7 @@ static id FCReadSize(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadRect(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_ALIGN_INPUT(double_t, *decoder->_offset);
+    FC_ALIGN_INPUT(Float64, *decoder->_offset);
     CGRect rect =
     {
         {(CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder)},
@@ -776,7 +776,7 @@ static id FCReadRange(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadVector(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_ALIGN_INPUT(double_t, *decoder->_offset);
+    FC_ALIGN_INPUT(Float64, *decoder->_offset);
     CGVector point = {(CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder)};
     NSValue *value = [NSValue valueWithBytes:&point objCType:@encode(CGVector)];
     return value;
@@ -784,7 +784,7 @@ static id FCReadVector(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCReadAffineTransform(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_ALIGN_INPUT(double_t, *decoder->_offset);
+    FC_ALIGN_INPUT(Float64, *decoder->_offset);
     CGAffineTransform transform =
     {
         (CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder),
@@ -797,7 +797,7 @@ static id FCReadAffineTransform(__unsafe_unretained FCNSDecoder *decoder)
 
 static id FCRead3DTransform(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_ALIGN_INPUT(double_t, *decoder->_offset);
+    FC_ALIGN_INPUT(Float64, *decoder->_offset);
     CGFloat transform[] =
     {
         (CGFloat)FCReadRawDouble(decoder), (CGFloat)FCReadRawDouble(decoder),
@@ -1020,7 +1020,7 @@ static inline void FCWriteUInt32(uint32_t value, __unsafe_unretained NSMutableDa
     [output appendBytes:&value length:sizeof(value)];
 }
 
-static inline void FCWriteDouble(double_t value, __unsafe_unretained NSMutableData *output)
+static inline void FCWriteDouble(Float64 value, __unsafe_unretained NSMutableData *output)
 {
     [output appendBytes:&value length:sizeof(value)];
 }
@@ -1596,8 +1596,8 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         case kCFNumberFloatType:
         {
             FCWriteType(FCTypeFloat32, coder->_output);
-            float_t value = [self floatValue];
-            FC_ALIGN_OUTPUT(float_t, coder->_output);
+            Float32 value = [self floatValue];
+            FC_ALIGN_OUTPUT(Float32, coder->_output);
             [coder->_output appendBytes:&value length:sizeof(value)];
             break;
         }
@@ -1606,8 +1606,8 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         case kCFNumberCGFloatType:
         {
             FCWriteType(FCTypeFloat64, coder->_output);
-            double_t value = [self doubleValue];
-            FC_ALIGN_OUTPUT(double_t, coder->_output);
+            Float64 value = [self doubleValue];
+            FC_ALIGN_OUTPUT(Float64, coder->_output);
             [coder->_output appendBytes:&value length:sizeof(value)];
             break;
         }
@@ -1971,29 +1971,29 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         CGFloat point[2];
         [self getValue:&point];
         FCWriteType(FCTypePoint, coder->_output);
-        FC_ALIGN_OUTPUT(double_t, coder->_output);
-        FCWriteDouble((double_t)point[0], coder->_output);
-        FCWriteDouble((double_t)point[1], coder->_output);
+        FC_ALIGN_OUTPUT(Float64, coder->_output);
+        FCWriteDouble((Float64)point[0], coder->_output);
+        FCWriteDouble((Float64)point[1], coder->_output);
     }
     else if (strcmp(type, @encode(CGSize)) == 0 OR_IF_MAC(strcmp(type, @encode(NSSize)) == 0))
     {
         CGFloat size[2];
         [self getValue:&size];
         FCWriteType(FCTypeSize, coder->_output);
-        FC_ALIGN_OUTPUT(double_t, coder->_output);
-        FCWriteDouble((double_t)size[0], coder->_output);
-        FCWriteDouble((double_t)size[1], coder->_output);
+        FC_ALIGN_OUTPUT(Float64, coder->_output);
+        FCWriteDouble((Float64)size[0], coder->_output);
+        FCWriteDouble((Float64)size[1], coder->_output);
     }
     else if (strcmp(type, @encode(CGRect)) == 0 OR_IF_MAC(strcmp(type, @encode(NSRect)) == 0))
     {
         CGFloat rect[4];
         [self getValue:&rect];
         FCWriteType(FCTypeRect, coder->_output);
-        FC_ALIGN_OUTPUT(double_t, coder->_output);
-        FCWriteDouble((double_t)rect[0], coder->_output);
-        FCWriteDouble((double_t)rect[1], coder->_output);
-        FCWriteDouble((double_t)rect[2], coder->_output);
-        FCWriteDouble((double_t)rect[3], coder->_output);
+        FC_ALIGN_OUTPUT(Float64, coder->_output);
+        FCWriteDouble((Float64)rect[0], coder->_output);
+        FCWriteDouble((Float64)rect[1], coder->_output);
+        FCWriteDouble((Float64)rect[2], coder->_output);
+        FCWriteDouble((Float64)rect[3], coder->_output);
     }
     else if (strcmp(type, @encode(NSRange)) == 0)
     {
@@ -2009,9 +2009,9 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         CGFloat vector[2];
         [self getValue:&vector];
         FCWriteType(FCTypeVector, coder->_output);
-        FC_ALIGN_OUTPUT(double_t, coder->_output);
-        FCWriteDouble((double_t)vector[0], coder->_output);
-        FCWriteDouble((double_t)vector[1], coder->_output);
+        FC_ALIGN_OUTPUT(Float64, coder->_output);
+        FCWriteDouble((Float64)vector[0], coder->_output);
+        FCWriteDouble((Float64)vector[1], coder->_output);
     }
     else if (strcmp(type, @encode(CGAffineTransform)) == 0)
     {
@@ -2020,7 +2020,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         FCWriteType(FCTypeAffineTransform, coder->_output);
         for (NSUInteger i = 0; i < 6; i++)
         {
-            FCWriteDouble((double_t)transform[i], coder->_output);
+            FCWriteDouble((Float64)transform[i], coder->_output);
         }
     }
     else if ([@(type) hasPrefix:@"{CATransform3D"])
@@ -2028,10 +2028,10 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         CGFloat transform[16];
         [self getValue:&transform];
         FCWriteType(FCType3DTransform, coder->_output);
-        FC_ALIGN_OUTPUT(double_t, coder->_output);
+        FC_ALIGN_OUTPUT(Float64, coder->_output);
         for (NSUInteger i = 0; i < 16; i++)
         {
-            FCWriteDouble((double_t)transform[i], coder->_output);
+            FCWriteDouble((Float64)transform[i], coder->_output);
         }
     }
     else
@@ -2055,7 +2055,7 @@ static inline uint32_t FCReadRawUInt32_2_3(__unsafe_unretained FCNSDecoder *deco
 
 static inline double FCReadRawDouble_2_3(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_READ_VALUE(double_t, *decoder->_offset, decoder->_input, decoder->_total);
+    FC_READ_VALUE(Float64, *decoder->_offset, decoder->_input, decoder->_total);
     return value;
 }
 
@@ -2282,17 +2282,17 @@ static id FCReadInt64_2_3(__unsafe_unretained FCNSDecoder *decoder)
     return number;
 }
 
-static id FCReadfloat_t_2_3(__unsafe_unretained FCNSDecoder *decoder)
+static id FCReadFloat32_2_3(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_READ_VALUE(float_t, *decoder->_offset, decoder->_input, decoder->_total);
+    FC_READ_VALUE(Float32, *decoder->_offset, decoder->_input, decoder->_total);
     __autoreleasing NSNumber *number = @(value);
     FCCacheParsedObject(number, decoder->_objectCache);
     return number;
 }
 
-static id FCReaddouble_t_2_3(__unsafe_unretained FCNSDecoder *decoder)
+static id FCReadFloat64_2_3(__unsafe_unretained FCNSDecoder *decoder)
 {
-    FC_READ_VALUE(double_t, *decoder->_offset, decoder->_input, decoder->_total);
+    FC_READ_VALUE(Float64, *decoder->_offset, decoder->_input, decoder->_total);
     __autoreleasing NSNumber *number = @(value);
     FCCacheParsedObject(number, decoder->_objectCache);
     return number;
@@ -2532,8 +2532,8 @@ static id FCReadObject_2_3(__unsafe_unretained FCNSDecoder *decoder)
         FCReadFalse_2_3,
         FCReadInt32_2_3,
         FCReadInt64_2_3,
-        FCReadfloat_t_2_3,
-        FCReaddouble_t_2_3,
+        FCReadFloat32_2_3,
+        FCReadFloat64_2_3,
         FCReadData_2_3,
         FCReadDate_2_3,
         FCReadMutableString_2_3,
