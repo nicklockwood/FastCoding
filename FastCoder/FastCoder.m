@@ -39,6 +39,9 @@
 #define FC_DIAGNOSTIC_ENABLED 0
 #endif
 
+#if TARGET_OS_IPHONE
+@import CoreGraphics;
+#endif
 
 #import <Availability.h>
 #if __has_feature(objc_arc)
