@@ -1302,8 +1302,10 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
 
 - (void)encodeObject:(__unsafe_unretained id)objv forKey:(__unsafe_unretained NSString *)key
 {
-    FCWriteObject(objv, self);
-    FCWriteObject(key, self);
+    if(objv){
+        FCWriteObject(objv, self);
+        FCWriteObject(key, self);
+    }
 }
 
 - (void)encodeConditionalObject:(id)objv forKey:(__unsafe_unretained NSString *)key
