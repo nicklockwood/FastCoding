@@ -1,7 +1,5 @@
 FastCoding
 
-Version 3.2.1, April 2nd, 2015
-
 Copyright (C) 2013 Charcoal Design
 
 This software is provided 'as-is', without any express or implied

@@ -18,8 +18,8 @@ FastCoder can also serialize your custom classes automatically using property in
 Supported OS & SDK Versions
 -----------------------------
 
-* Supported build target - iOS 8.1 / Mac OS 10.10 (Xcode 6.1, Apple LLVM compiler 6.0)
-* Earliest supported deployment target - iOS 5.0 / Mac OS 10.7
+* Supported build target - iOS 11.0 / Mac OS 10.12 (Xcode 9.0)
+* Earliest supported deployment target - iOS 9.0 / Mac OS 10.10
 * Earliest compatible deployment target - iOS 4.0 / Mac OS 10.6
 
 NOTE: 'Supported' means that the library has been tested with this version. 'Compatible' means that the library should work on this OS version (i.e. it doesn't rely on any unavailable SDK features) but is no longer being tested for compatibility and may require tweaking or bug fixes to run correctly.
@@ -238,7 +238,13 @@ Load the file and save it again. Now change the macro back again.
 Release notes
 ------------------
 
-Verion 3.2.1
+Version 3.2.2
+
+- Fixed warnings on Xcode 9
+- Fixed corruption bug when writing NSCoded archives containing nil properties
+- Added tvOS support to Podspec
+
+Version 3.2.1
 
 - Fixed possible alignment issue with Float64 types on 32-bit processors
 

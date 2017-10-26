@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 3.2.1
+//  Version 3.2.2
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -53,6 +53,7 @@
 #pragma clang diagnostic ignored "-Wfour-char-constants"
 #pragma clang diagnostic ignored "-Wobjc-missing-property-synthesis"
 #pragma clang diagnostic ignored "-Wdirect-ivar-access"
+#pragma clang diagnostic ignored "-Wcast-qual"
 
 
 NSString *const FastCodingException = @"FastCodingException";
@@ -1302,7 +1303,8 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
 
 - (void)encodeObject:(__unsafe_unretained id)objv forKey:(__unsafe_unretained NSString *)key
 {
-    if(objv){
+    if (objv)
+    {
         FCWriteObject(objv, self);
         FCWriteObject(key, self);
     }
@@ -2038,7 +2040,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
     }
     else
     {
-        [NSException raise:FastCodingException format:@"Unable to encode NSValue data of type %s", type];
+        [NSException raise:FastCodingException format:@"Unable to encode NSValue data of type %@", @(type)];
     }
 }
 
