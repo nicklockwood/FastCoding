@@ -230,12 +230,12 @@ typedef id FCTypeConstructor(FCNSDecoder *);
 
 static Boolean FCEqualityCallback(const void *value1, const void *value2)
 {
-    return (Boolean)[(id)value1 isEqual:(id)value2];
+    return (Boolean)[(__bridge id)value1 isEqual:(__bridge id)value2];
 }
 
 static CFHashCode	FCHashCallback(const void *value)
 {
-    return [(id)value hash];
+    return [(__bridge id)value hash];
 }
 
 static inline NSUInteger FCCacheParsedObject(__unsafe_unretained id object, __unsafe_unretained NSData *cache)
