@@ -12,6 +12,9 @@
 		01D28C891907BFC80021C719 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 01D28C881907BFC80021C719 /* XCTest.framework */; };
 		01D28C8A1907BFC80021C719 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 01D28C6F1907BFC80021C719 /* Foundation.framework */; };
 		01D28C8B1907BFC80021C719 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 01D28C731907BFC80021C719 /* UIKit.framework */; };
+		C51D92A820438C3E00D77CDD /* FastCoderTestsMac.m in Sources */ = {isa = PBXBuildFile; fileRef = C51D92A720438C3E00D77CDD /* FastCoderTestsMac.m */; };
+		C51D92AD20438CAA00D77CDD /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01244B111934E906000BF3CD /* FastCoder.m */; };
+		C51D92AF20438D4900D77CDD /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C51D92AE20438D4900D77CDD /* AppKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +27,10 @@
 		01D28C871907BFC80021C719 /* UnitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UnitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		01D28C881907BFC80021C719 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		01D28C901907BFC80021C719 /* UnitTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "UnitTests-Info.plist"; sourceTree = "<group>"; };
+		C51D92A520438C3E00D77CDD /* FastCoderTestsMac.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FastCoderTestsMac.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C51D92A720438C3E00D77CDD /* FastCoderTestsMac.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FastCoderTestsMac.m; sourceTree = "<group>"; };
+		C51D92A920438C3E00D77CDD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C51D92AE20438D4900D77CDD /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk/System/Library/Frameworks/AppKit.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -34,6 +41,14 @@
 				01D28C891907BFC80021C719 /* XCTest.framework in Frameworks */,
 				01D28C8B1907BFC80021C719 /* UIKit.framework in Frameworks */,
 				01D28C8A1907BFC80021C719 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C51D92A220438C3E00D77CDD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C51D92AF20438D4900D77CDD /* AppKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -55,6 +70,7 @@
 			children = (
 				01244B0F1934E906000BF3CD /* FastCoder */,
 				01D28C8E1907BFC80021C719 /* UnitTests */,
+				C51D92A620438C3E00D77CDD /* FastCoderTestsMac */,
 				01D28C6E1907BFC80021C719 /* Frameworks */,
 				01D28C6D1907BFC80021C719 /* Products */,
 			);
@@ -64,6 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				01D28C871907BFC80021C719 /* UnitTests.xctest */,
+				C51D92A520438C3E00D77CDD /* FastCoderTestsMac.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -71,6 +88,7 @@
 		01D28C6E1907BFC80021C719 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C51D92AE20438D4900D77CDD /* AppKit.framework */,
 				01D28C6F1907BFC80021C719 /* Foundation.framework */,
 				01D28C711907BFC80021C719 /* CoreGraphics.framework */,
 				01D28C731907BFC80021C719 /* UIKit.framework */,
@@ -96,6 +114,15 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		C51D92A620438C3E00D77CDD /* FastCoderTestsMac */ = {
+			isa = PBXGroup;
+			children = (
+				C51D92A720438C3E00D77CDD /* FastCoderTestsMac.m */,
+				C51D92A920438C3E00D77CDD /* Info.plist */,
+			);
+			path = FastCoderTestsMac;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -116,6 +143,23 @@
 			productReference = 01D28C871907BFC80021C719 /* UnitTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		C51D92A420438C3E00D77CDD /* FastCoderTestsMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C51D92AA20438C3E00D77CDD /* Build configuration list for PBXNativeTarget "FastCoderTestsMac" */;
+			buildPhases = (
+				C51D92A120438C3E00D77CDD /* Sources */,
+				C51D92A220438C3E00D77CDD /* Frameworks */,
+				C51D92A320438C3E00D77CDD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FastCoderTestsMac;
+			productName = FastCoderTestsMac;
+			productReference = C51D92A520438C3E00D77CDD /* FastCoderTestsMac.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -127,6 +171,11 @@
 				TargetAttributes = {
 					01D28C861907BFC80021C719 = {
 						TestTargetID = 01D28C6B1907BFC80021C719;
+					};
+					C51D92A420438C3E00D77CDD = {
+						CreatedOnToolsVersion = 9.2;
+						DevelopmentTeam = MU27A4SCKC;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -143,12 +192,20 @@
 			projectRoot = "";
 			targets = (
 				01D28C861907BFC80021C719 /* UnitTests */,
+				C51D92A420438C3E00D77CDD /* FastCoderTestsMac */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		01D28C851907BFC80021C719 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C51D92A320438C3E00D77CDD /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -164,6 +221,15 @@
 			files = (
 				01244B141934E926000BF3CD /* FastCoderTests.m in Sources */,
 				01244B121934E906000BF3CD /* FastCoder.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C51D92A120438C3E00D77CDD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C51D92A820438C3E00D77CDD /* FastCoderTestsMac.m in Sources */,
+				C51D92AD20438CAA00D77CDD /* FastCoder.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -400,6 +466,60 @@
 			};
 			name = Release;
 		};
+		C51D92AB20438C3E00D77CDD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = MU27A4SCKC;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				INFOPLIST_FILE = FastCoderTestsMac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.charcoaldesign.FastCoderTestsMac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		C51D92AC20438C3E00D77CDD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = MU27A4SCKC;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				INFOPLIST_FILE = FastCoderTestsMac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = com.charcoaldesign.FastCoderTestsMac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -417,6 +537,15 @@
 			buildConfigurations = (
 				01D28C9C1907BFC80021C719 /* Debug */,
 				01D28C9D1907BFC80021C719 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C51D92AA20438C3E00D77CDD /* Build configuration list for PBXNativeTarget "FastCoderTestsMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C51D92AB20438C3E00D77CDD /* Debug */,
+				C51D92AC20438C3E00D77CDD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

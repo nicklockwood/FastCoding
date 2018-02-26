@@ -9,7 +9,6 @@
 #import <XCTest/XCTest.h>
 #import "FastCoder.h"
 
-
 @interface Model : NSObject <NSCopying>
 
 @property (nonatomic, strong) NSString *text2;
