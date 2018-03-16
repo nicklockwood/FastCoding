@@ -16,6 +16,7 @@
 @property (nonatomic, strong) NSString *textNew;
 @property (nonatomic, strong) NSArray *array1;
 @property (nonatomic, strong) NSArray *array2;
+@property (nonatomic, strong) NSDate *date;
 
 @end
 
@@ -32,7 +33,8 @@
         ((!self.text2 && !model.text2) || [self.text2 isEqual:model.text2]) &&
         ((!self.textNew && !model.textNew) || [self.textNew isEqual:model.textNew]) &&
         ((!self.array1 && !model.array1) || [self.array1 isEqual:model.array1]) &&
-        ((!self.array2 && !model.array2) || [self.array2 isEqual:model.array2]);
+        ((!self.array2 && !model.array2) || [self.array2 isEqual:model.array2]) &&
+        ((!self.date && !model.date) || [self.date isEqual:model.date]);
     }
     return NO;
 }
@@ -44,6 +46,7 @@
     copy.textNew = self.textNew;
     copy.array1 = self.array1;
     copy.array2 = self.array2;
+    copy.date = self.date;
     return copy;
 }
 
@@ -70,6 +73,7 @@
     model.textNew = [NSMutableString stringWithString:@"bar"];
     model.array1 = @[@"foo", @"bar"];
     model.array2 = @[@1, @2];
+    model.date = [NSDate date];
     
     //save model
     NSData *data = [FastCoder dataWithRootObject:model];
@@ -193,6 +197,18 @@
     
     //check
     XCTAssertEqualObjects([input description], [output description]);
+}
+
+- (void)testDateEquality
+{
+    NSDate *input = [NSDate dateWithTimeIntervalSinceReferenceDate:542911754.16538298];
+
+    //convert to FastCoded data
+    NSData *data = [FastCoder dataWithRootObject:input];
+    NSDate *output = [FastCoder objectWithData:data];
+
+    //check
+    XCTAssertTrue([input isEqualToDate:output]);
 }
 
 - (void)testBooleans
