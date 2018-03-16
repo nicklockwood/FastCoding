@@ -238,6 +238,10 @@ Load the file and save it again. Now change the macro back again.
 Release notes
 ------------------
 
+Version 3.3
+
+- Fixed precision loss when serializing NSDate objects (now using -timeIntervalSinceReferenceDate rather than -timeIntervalSince1970)
+
 Version 3.2.2
 
 - Fixed warnings on Xcode 9
