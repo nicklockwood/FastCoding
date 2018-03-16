@@ -1,7 +1,7 @@
 //
 //  FastCoding.m
 //
-//  Version 3.2.2
+//  Version 3.3
 //
 //  Created by Nick Lockwood on 09/12/2013.
 //  Copyright (c) 2013 Charcoal Design
@@ -203,6 +203,7 @@ typedef id FCTypeConstructor(FCNSDecoder *);
 {
     
 @public
+    FCHeader _header;
     NSUInteger *_offset;
     const void *_input;
     NSUInteger _total;
@@ -667,7 +668,8 @@ static id FCReadDate(__unsafe_unretained FCNSDecoder *decoder)
 {
     FC_ALIGN_INPUT(NSTimeInterval, *decoder->_offset);
     FC_READ_VALUE(NSTimeInterval, *decoder->_offset, decoder->_input, decoder->_total);
-    __autoreleasing NSDate *date = [NSDate dateWithTimeIntervalSince1970:value];
+    BOOL since1970 = (decoder->_header.majorVersion == 3 && decoder->_header.minorVersion < 3); // from 3.0 to 3.2
+    __autoreleasing NSDate *date = (since1970) ? [NSDate dateWithTimeIntervalSince1970:value] : [NSDate dateWithTimeIntervalSinceReferenceDate:value];
     FCCacheParsedObject(date, decoder->_objectCache);
     return date;
 }
@@ -954,6 +956,7 @@ id FCParseData(NSData *data, FCTypeConstructor *constructors[])
     //create decoder
     NSUInteger offset = sizeof(header);
     FCNSDecoder *decoder = FC_AUTORELEASE([[FCNSDecoder alloc] init]);
+    decoder->_header = header;
     decoder->_constructors = constructors;
     decoder->_input = input;
     decoder->_offset = &offset;
@@ -1727,7 +1730,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
     if (FCWriteObjectAlias(self, coder)) return;
     FCCacheWrittenObject(self, coder->_objectCache);
     FCWriteType(FCTypeDate, coder->_output);
-    NSTimeInterval value = [self timeIntervalSince1970];
+    NSTimeInterval value = [self timeIntervalSinceReferenceDate];
     FC_ALIGN_OUTPUT(NSTimeInterval, coder->_output);
     [coder->_output appendBytes:&value length:sizeof(value)];
 }
