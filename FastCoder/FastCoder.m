@@ -878,17 +878,7 @@ static id FCReadNSCodedObject(__unsafe_unretained FCNSDecoder *decoder)
     }
     else
     {
-        const CFDictionaryKeyCallBacks stringKeyCallbacks =
-        {
-            0,
-            NULL,
-            NULL,
-            NULL,
-            FCEqualityCallback,
-            FCHashCallback
-        };
-        
-        __autoreleasing id properties = CFBridgingRelease(CFDictionaryCreateMutable(NULL, 0, &stringKeyCallbacks, NULL));
+        __autoreleasing id properties = [NSMutableDictionary dictionary];
         decoder->_properties = properties;
     }
     while (true)
