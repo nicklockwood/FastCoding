@@ -141,17 +141,6 @@ typedef NS_ENUM(uint8_t, FCType)
 #define OR_IF_MAC(x)
 #else
 #define OR_IF_MAC(x) || (x)
-#import <Cocoa/Cocoa.h>
-
-@implementation NSColorSpace (FastCoding)
-
-- (BOOL)preferKeyedArchiver
-{
-    return YES;
-}
-
-@end
-
 #endif
 
 
@@ -1535,7 +1524,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
 
 - (BOOL)preferKeyedArchiver
 {
-    return NO;
+    return [@[@"NSColorSpace"] containsObject:NSStringFromClass([self classForCoder])];
 }
 
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
