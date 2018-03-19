@@ -54,6 +54,38 @@
 @end
 
 
+@interface NSCodedModel : NSObject <NSCoding>
+
+@property (nonatomic, strong) NSString *text;
+@property (nonatomic, assign) BOOL preferKeyedArchiver;
+
+@end
+
+
+@implementation NSCodedModel
+
+- (instancetype)initWithCoder:(NSCoder *)decoder
+{
+    if ((self = [super init]))
+    {
+        _text = [decoder decodeObjectForKey: @"text"];
+    }
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    [coder encodeObject:self.text forKey:@"text"];
+}
+
+- (BOOL)isEqual:(id)object
+{
+    return [object isKindOfClass:[NSCodedModel class]] && [self.text isEqual:[object text]];
+}
+
+@end
+
+
 @interface FastCoderTests : XCTestCase
 
 @end
@@ -202,6 +234,31 @@
   
     //check
     XCTAssertEqualObjects([input class], [output class]);
+}
+
+- (void)testNSCoding
+{
+    NSCodedModel *input = [[NSCodedModel alloc] init];
+    input.text = @"foo";
+    NSData *data = [FastCoder dataWithRootObject:input];
+    NSNumber *output = [FastCoder objectWithData:data];
+
+    //check
+    XCTAssertEqualObjects([input class], [output class]);
+    XCTAssertEqualObjects(input, output);
+}
+
+- (void)testKeyedArchiver
+{
+    NSCodedModel *input = [[NSCodedModel alloc] init];
+    input.text = @"foo";
+    input.preferKeyedArchiver = YES;
+    NSData *data = [FastCoder dataWithRootObject:input];
+    NSNumber *output = [FastCoder objectWithData:data];
+
+    //check
+    XCTAssertEqualObjects([input class], [output class]);
+    XCTAssertEqualObjects(input, output);
 }
 
 @end

@@ -43,6 +43,7 @@ extern NSString *const FastCodingException;
 - (id)awakeAfterFastCoding;
 - (Class)classForFastCoding;
 - (BOOL)preferFastCoding;
+- (BOOL)preferKeyedArchiver;
 
 @end
 

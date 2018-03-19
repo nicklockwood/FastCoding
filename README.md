@@ -127,7 +127,11 @@ This method is used to supply an alternative class to use for coding/decoding an
  
     - (BOOL)preferFastCoding;
 
-Because FastCoding automatically supports NSCoding, any object that conforms to the NSCoding protocol (except for types that are explicitly supported by FastCoding) will be encoded using the NSCoding methods by default. This is better for compatibility purposes, but may be signficantly slower than using the FastCoding protocol. If your class supports both NSCoding and FastCoding, and you would prefer FastCoder to use the FastCoding protocol, override this method and return `YES` (the default value is `NO`).
+Because FastCoding automatically supports NSCoding, any object that conforms to the NSCoding protocol (except for types that are explicitly supported by FastCoding) will be encoded using the NSCoding methods by default. This is better for compatibility purposes, but may be significantly slower than using the FastCoding protocol. If your class supports both NSCoding and FastCoding, and you would prefer FastCoder to use the FastCoding protocol, override this method and return `YES` (the default value is `NO`).
+
+    - (BOOL)preferKeyedArchiver;
+    
+Occasionally you may find that a given class does not work correctly with the FastCoding protocol. Typically this will only be the case for built-in Foundation or UIKit/AppKit classes (the only known case so far is AppKit's `NSColorSpace` - if you find any others, please report them). In such cases, you can use `preferKeyedArchiver` to encode these objects using an ordinary `NSKeyedArchive` embedded within the FastCoded archive. Note that this option has no effect if `preferFastCoding` is set to `YES`.
  
 
 Overriding Default FastCoding Behaviour

@@ -9,10 +9,11 @@
 /* Begin PBXBuildFile section */
 		01244B121934E906000BF3CD /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01244B111934E906000BF3CD /* FastCoder.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		01244B141934E926000BF3CD /* FastCoderTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 01244B131934E926000BF3CD /* FastCoderTests.m */; };
+		012E9418205FD1BD0041F159 /* FastCoderTestsMac.m in Sources */ = {isa = PBXBuildFile; fileRef = 012E9416205FD1B80041F159 /* FastCoderTestsMac.m */; };
+		012E9419205FD1F90041F159 /* FastCoderTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 01244B131934E926000BF3CD /* FastCoderTests.m */; };
 		01D28C891907BFC80021C719 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 01D28C881907BFC80021C719 /* XCTest.framework */; };
 		01D28C8A1907BFC80021C719 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 01D28C6F1907BFC80021C719 /* Foundation.framework */; };
 		01D28C8B1907BFC80021C719 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 01D28C731907BFC80021C719 /* UIKit.framework */; };
-		C51D92A820438C3E00D77CDD /* FastCoderTestsMac.m in Sources */ = {isa = PBXBuildFile; fileRef = C51D92A720438C3E00D77CDD /* FastCoderTestsMac.m */; };
 		C51D92AD20438CAA00D77CDD /* FastCoder.m in Sources */ = {isa = PBXBuildFile; fileRef = 01244B111934E906000BF3CD /* FastCoder.m */; };
 		C51D92AF20438D4900D77CDD /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C51D92AE20438D4900D77CDD /* AppKit.framework */; };
 /* End PBXBuildFile section */
@@ -21,15 +22,14 @@
 		01244B101934E906000BF3CD /* FastCoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FastCoder.h; sourceTree = "<group>"; };
 		01244B111934E906000BF3CD /* FastCoder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FastCoder.m; sourceTree = "<group>"; };
 		01244B131934E926000BF3CD /* FastCoderTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FastCoderTests.m; sourceTree = "<group>"; };
+		012E9416205FD1B80041F159 /* FastCoderTestsMac.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FastCoderTestsMac.m; sourceTree = "<group>"; };
 		01D28C6F1907BFC80021C719 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		01D28C711907BFC80021C719 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		01D28C731907BFC80021C719 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		01D28C871907BFC80021C719 /* UnitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UnitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		01D28C881907BFC80021C719 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		01D28C901907BFC80021C719 /* UnitTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "UnitTests-Info.plist"; sourceTree = "<group>"; };
-		C51D92A520438C3E00D77CDD /* FastCoderTestsMac.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FastCoderTestsMac.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C51D92A720438C3E00D77CDD /* FastCoderTestsMac.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FastCoderTestsMac.m; sourceTree = "<group>"; };
-		C51D92A920438C3E00D77CDD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C51D92A520438C3E00D77CDD /* UnitTestsMac.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UnitTestsMac.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C51D92AE20438D4900D77CDD /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk/System/Library/Frameworks/AppKit.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
@@ -70,7 +70,6 @@
 			children = (
 				01244B0F1934E906000BF3CD /* FastCoder */,
 				01D28C8E1907BFC80021C719 /* UnitTests */,
-				C51D92A620438C3E00D77CDD /* FastCoderTestsMac */,
 				01D28C6E1907BFC80021C719 /* Frameworks */,
 				01D28C6D1907BFC80021C719 /* Products */,
 			);
@@ -80,7 +79,7 @@
 			isa = PBXGroup;
 			children = (
 				01D28C871907BFC80021C719 /* UnitTests.xctest */,
-				C51D92A520438C3E00D77CDD /* FastCoderTestsMac.xctest */,
+				C51D92A520438C3E00D77CDD /* UnitTestsMac.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,6 +100,7 @@
 			isa = PBXGroup;
 			children = (
 				01244B131934E926000BF3CD /* FastCoderTests.m */,
+				012E9416205FD1B80041F159 /* FastCoderTestsMac.m */,
 				01D28C8F1907BFC80021C719 /* Supporting Files */,
 			);
 			path = UnitTests;
@@ -112,15 +112,6 @@
 				01D28C901907BFC80021C719 /* UnitTests-Info.plist */,
 			);
 			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		C51D92A620438C3E00D77CDD /* FastCoderTestsMac */ = {
-			isa = PBXGroup;
-			children = (
-				C51D92A720438C3E00D77CDD /* FastCoderTestsMac.m */,
-				C51D92A920438C3E00D77CDD /* Info.plist */,
-			);
-			path = FastCoderTestsMac;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -143,9 +134,9 @@
 			productReference = 01D28C871907BFC80021C719 /* UnitTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		C51D92A420438C3E00D77CDD /* FastCoderTestsMac */ = {
+		C51D92A420438C3E00D77CDD /* UnitTestsMac */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C51D92AA20438C3E00D77CDD /* Build configuration list for PBXNativeTarget "FastCoderTestsMac" */;
+			buildConfigurationList = C51D92AA20438C3E00D77CDD /* Build configuration list for PBXNativeTarget "UnitTestsMac" */;
 			buildPhases = (
 				C51D92A120438C3E00D77CDD /* Sources */,
 				C51D92A220438C3E00D77CDD /* Frameworks */,
@@ -155,9 +146,9 @@
 			);
 			dependencies = (
 			);
-			name = FastCoderTestsMac;
+			name = UnitTestsMac;
 			productName = FastCoderTestsMac;
-			productReference = C51D92A520438C3E00D77CDD /* FastCoderTestsMac.xctest */;
+			productReference = C51D92A520438C3E00D77CDD /* UnitTestsMac.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -192,7 +183,7 @@
 			projectRoot = "";
 			targets = (
 				01D28C861907BFC80021C719 /* UnitTests */,
-				C51D92A420438C3E00D77CDD /* FastCoderTestsMac */,
+				C51D92A420438C3E00D77CDD /* UnitTestsMac */,
 			);
 		};
 /* End PBXProject section */
@@ -228,8 +219,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C51D92A820438C3E00D77CDD /* FastCoderTestsMac.m in Sources */,
+				012E9419205FD1F90041F159 /* FastCoderTests.m in Sources */,
 				C51D92AD20438CAA00D77CDD /* FastCoder.m in Sources */,
+				012E9418205FD1BD0041F159 /* FastCoderTestsMac.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -475,15 +467,14 @@
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = MU27A4SCKC;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
-				INFOPLIST_FILE = FastCoderTestsMac/Info.plist;
+				INFOPLIST_FILE = "UnitTests/UnitTests-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = YES;
@@ -502,15 +493,14 @@
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CODE_SIGN_IDENTITY = "Mac Developer";
+				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = MU27A4SCKC;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
-				INFOPLIST_FILE = FastCoderTestsMac/Info.plist;
+				INFOPLIST_FILE = "UnitTests/UnitTests-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -541,7 +531,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C51D92AA20438C3E00D77CDD /* Build configuration list for PBXNativeTarget "FastCoderTestsMac" */ = {
+		C51D92AA20438C3E00D77CDD /* Build configuration list for PBXNativeTarget "UnitTestsMac" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C51D92AB20438C3E00D77CDD /* Debug */,

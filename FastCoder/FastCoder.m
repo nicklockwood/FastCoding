@@ -61,7 +61,7 @@ NSString *const FastCodingException = @"FastCodingException";
 
 static const uint32_t FCIdentifier = 'FAST';
 static const uint16_t FCMajorVersion = 3;
-static const uint16_t FCMinorVersion = 2;
+static const uint16_t FCMinorVersion = 3;
 
 
 typedef struct
@@ -122,6 +122,7 @@ typedef NS_ENUM(uint8_t, FCType)
     FCTypeDecimalNumber,
     FCTypeOne,
     FCTypeZero,
+    FCTypeKeyedArchive,
   
     FCTypeCount // sentinel value
 };
@@ -139,6 +140,17 @@ typedef NS_ENUM(uint8_t, FCType)
 #define OR_IF_MAC(x)
 #else
 #define OR_IF_MAC(x) || (x)
+#import <Cocoa/Cocoa.h>
+
+@implementation NSColorSpace (FastCoding)
+
+- (BOOL)preferKeyedArchiver
+{
+    return YES;
+}
+
+@end
+
 #endif
 
 
@@ -893,6 +905,14 @@ static id FCReadNSCodedObject(__unsafe_unretained FCNSDecoder *decoder)
     return object;
 }
 
+static id FCReadKeyedArchive(__unsafe_unretained FCNSDecoder *decoder)
+{
+    NSData *data = FCReadData(decoder);
+    id object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+    FCCacheParsedObject(object, decoder->_objectCache);
+    return object;
+}
+
 static id FCReadDecimalNumber(__unsafe_unretained FCNSDecoder *decoder)
 {
     FC_ALIGN_INPUT(NSDecimal, *decoder->_offset);
@@ -1156,7 +1176,8 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         FCReadNSCodedObject,
         FCReadDecimalNumber,
         FCReadOne,
-        FCReadZero
+        FCReadZero,
+        FCReadKeyedArchive
     };
     
     return FCParseData(data, constructors);
@@ -1212,7 +1233,8 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         NULL,
         FCReadDecimalNumber,
         FCReadOne,
-        FCReadZero
+        FCReadZero,
+        NULL
     };
   
     return FCParseData(data, constructors);
@@ -1507,6 +1529,11 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
     return NO;
 }
 
+- (BOOL)preferKeyedArchiver
+{
+    return NO;
+}
+
 - (void)FC_encodeWithCoder:(__unsafe_unretained FCNSCoder *)coder
 {
     if (FCWriteObjectAlias(self, coder)) return;
@@ -1515,11 +1542,20 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
     if (![self preferFastCoding] && [self conformsToProtocol:@protocol(NSCoding)])
     {
         //write object
-        FCWriteType(FCTypeNSCodedObject, coder->_output);
-        FCWriteObject(NSStringFromClass([self classForCoder]), coder);
-        [(id <NSCoding>)self encodeWithCoder:coder];
-        FCWriteType(FCTypeNil, coder->_output);
-        FCCacheWrittenObject(self, coder->_objectCache);
+        if ([self preferKeyedArchiver])
+        {
+            FCWriteType(FCTypeKeyedArchive, coder->_output);
+            FCWriteObject([NSKeyedArchiver archivedDataWithRootObject:self], coder);
+            FCCacheWrittenObject(self, coder->_objectCache);
+        }
+        else
+        {
+            FCWriteType(FCTypeNSCodedObject, coder->_output);
+            FCWriteObject(NSStringFromClass([self classForCoder]), coder);
+            [(id <NSCoding>)self encodeWithCoder:coder];
+            FCWriteType(FCTypeNil, coder->_output);
+            FCCacheWrittenObject(self, coder->_objectCache);
+        }
         return;
     }
     
