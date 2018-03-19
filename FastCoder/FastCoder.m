@@ -97,7 +97,7 @@ typedef NS_ENUM(uint8_t, FCType)
     FCTypeFloat32,
     FCTypeFloat64,
     FCTypeData,
-    FCTypeDate,
+    FCTypeLegacyDate,
     FCTypeMutableString,
     FCTypeMutableDictionary,
     FCTypeMutableArray,
@@ -123,6 +123,7 @@ typedef NS_ENUM(uint8_t, FCType)
     FCTypeOne,
     FCTypeZero,
     FCTypeKeyedArchive,
+    FCTypeDate,
   
     FCTypeCount // sentinel value
 };
@@ -664,12 +665,20 @@ static id FCReadMutableData(__unsafe_unretained FCNSDecoder *decoder)
     return data;
 }
 
+static id FCReadLegacyDate(__unsafe_unretained FCNSDecoder *decoder)
+{
+    FC_ALIGN_INPUT(NSTimeInterval, *decoder->_offset);
+    FC_READ_VALUE(NSTimeInterval, *decoder->_offset, decoder->_input, decoder->_total);
+    __autoreleasing NSDate *date = [NSDate dateWithTimeIntervalSince1970:value];
+    FCCacheParsedObject(date, decoder->_objectCache);
+    return date;
+}
+
 static id FCReadDate(__unsafe_unretained FCNSDecoder *decoder)
 {
     FC_ALIGN_INPUT(NSTimeInterval, *decoder->_offset);
     FC_READ_VALUE(NSTimeInterval, *decoder->_offset, decoder->_input, decoder->_total);
-    BOOL since1970 = (decoder->_header.majorVersion == 3 && decoder->_header.minorVersion < 3); // from 3.0 to 3.2
-    __autoreleasing NSDate *date = (since1970) ? [NSDate dateWithTimeIntervalSince1970:value] : [NSDate dateWithTimeIntervalSinceReferenceDate:value];
+    __autoreleasing NSDate *date = [NSDate dateWithTimeIntervalSinceReferenceDate:value];
     FCCacheParsedObject(date, decoder->_objectCache);
     return date;
 }
@@ -1145,7 +1154,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         FCReadFloat32,
         FCReadFloat64,
         FCReadData,
-        FCReadDate,
+        FCReadLegacyDate,
         FCReadMutableString,
         FCReadMutableDictionary,
         FCReadMutableArray,
@@ -1170,7 +1179,8 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         FCReadDecimalNumber,
         FCReadOne,
         FCReadZero,
-        FCReadKeyedArchive
+        FCReadKeyedArchive,
+        FCReadDate,
     };
     
     return FCParseData(data, constructors);
@@ -1202,7 +1212,7 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         FCReadFloat32,
         FCReadFloat64,
         FCReadData,
-        FCReadDate,
+        FCReadLegacyDate,
         FCReadMutableString,
         FCReadMutableDictionary,
         FCReadMutableArray,
@@ -1227,7 +1237,8 @@ static void FCWriteObject(__unsafe_unretained id object, __unsafe_unretained FCN
         FCReadDecimalNumber,
         FCReadOne,
         FCReadZero,
-        NULL
+        NULL,
+        FCReadDate,
     };
   
     return FCParseData(data, constructors);
